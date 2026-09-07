@@ -1,0 +1,6 @@
+{
+  "name": "YojanaMatch",
+  "description": "AI-powered government scheme discovery and eligibility matching platform for marginalized entrepreneurs in India.",
+  "requestFramePermissions": ["microphone", "geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

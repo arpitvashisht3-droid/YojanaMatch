@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Noto Sans', 'Noto Sans Devanagari', system-ui, -apple-system, sans-serif;
+    background-color: #FAFAF7;
+    color: #1F2937;
+    min-height: 100vh;
+  }
+}
+
+/* Custom scrollbar and accessibility focus styles */
+:focus-visible {
+  outline: 2px solid #FF6B35;
+  outline-offset: 2px;
+}
+
+/* Touch friendly minimum heights */
+.touch-target {
+  min-height: 48px;
+  min-width: 48px;
+}
+

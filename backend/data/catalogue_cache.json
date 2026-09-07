@@ -1,0 +1,468 @@
+[
+  {
+    "id": "pm_ajay",
+    "name": "PM-AJAY (Pradhan Mantri Anusuchit Jaati Abhyuday Yojana)",
+    "hindi_name": "प्रधानमंत्री अनुसूचित जाति अभ्युदय योजना (PM-AJAY)",
+    "ministry": "Ministry of Social Justice and Empowerment",
+    "hindi_ministry": "सामाजिक न्याय एवं अधिकारिता मंत्रालय",
+    "benefit_headline": "Skill development, infrastructure & financial assistance for SC community",
+    "hindi_benefit_headline": "अनुसूचित जाति के समुदायों के लिए कौशल विकास, बुनियादी ढांचा और वित्तीय सहायता",
+    "official_link": "https://pmajay.dosje.gov.in/",
+    "short_summary": "Income-generating asset creation and skill training for Scheduled Caste beneficiaries living below poverty line or low income.",
+    "hindi_short_summary": "गरीबी रेखा से नीचे या कम आय वाले अनुसूचित जाति के लाभार्थियों के लिए आय-सर्जक संपत्ति और कौशल प्रशिक्षण।",
+    "category": "scheme",
+    "eligibility": {
+      "min_age": 18,
+      "allowed_genders": ["any"],
+      "allowed_castes": ["sc"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "Grant up to ₹50,000 per family",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "pmegp",
+    "name": "Prime Minister's Employment Generation Programme (PMEGP)",
+    "hindi_name": "प्रधानमंत्री रोजगार सृजन कार्यक्रम (PMEGP)",
+    "ministry": "Ministry of Micro, Small and Medium Enterprises",
+    "hindi_ministry": "सूक्ष्म, लघु एवं मध्यम उद्यम मंत्रालय",
+    "benefit_headline": "Up to ₹50 Lakh loan with 15%-35% subsidy",
+    "hindi_benefit_headline": "₹50 लाख तक का ऋण और 15%-35% सब्सिडी",
+    "official_link": "https://www.kviconline.gov.in/pmegpeportal/pmegpmainpage.jsp",
+    "short_summary": "Credit-linked benefit program to generate employment by establishing micro-enterprises in non-farm sector.",
+    "hindi_short_summary": "गैर-कृषि क्षेत्र में सूक्ष्म उद्यम स्थापित करके रोजगार पैदा करने के लिए क्रेडिट-लिंक्ड योजना।",
+    "category": "scheme",
+    "eligibility": {
+      "min_age": 18,
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹50,00,000",
+      "benefit_percentage": "15% - 35% subsidy",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "pm_svanidhi",
+    "name": "PM SVANidhi (PM Street Vendor's AtmaNirbhar Nidhi)",
+    "hindi_name": "पीएम स्वनिधि (प्रधानमंत्री स्ट्रीट वेंडर आत्मनिर्भर निधि)",
+    "ministry": "Ministry of Housing and Urban Affairs",
+    "hindi_ministry": "आवास एवं शहरी कार्य मंत्रालय",
+    "benefit_headline": "Collateral-free working capital loan up to ₹50,000",
+    "hindi_benefit_headline": "₹50,000 तक का बिना गारंटी कार्यशील पूंजी ऋण",
+    "official_link": "https://pmsvanidhi.mohua.gov.in/",
+    "short_summary": "Special micro-credit facility for street vendors providing working capital loans up to ₹50,000 with 7% interest subsidy.",
+    "hindi_short_summary": "रेहड़ी-पटरी वालों के लिए ₹50,000 तक का कार्यशील पूंजी ऋण और 7% ब्याज सब्सिडी।",
+    "category": "scheme",
+    "eligibility": {
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"],
+      "allowed_business_types": ["street_vendor"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹50,000",
+      "benefit_percentage": "7% interest subsidy",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "stand_up_india",
+    "name": "Stand-Up India Scheme",
+    "hindi_name": "स्टैंड-अप इंडिया योजना",
+    "ministry": "Ministry of Finance",
+    "hindi_ministry": "वित्त मंत्रालय",
+    "benefit_headline": "Bank loans between ₹10 Lakh and ₹1 Crore for SC/ST and Women",
+    "hindi_benefit_headline": "अनुसूचित जाति/जनजाति और महिला उद्यमियों के लिए ₹10 लाख से ₹1 करोड़ तक का ऋण",
+    "official_link": "https://www.standupmitra.in/",
+    "short_summary": "Facilitates bank loans between ₹10 lakh and ₹1 crore to at least one SC/ST borrower and at least one woman borrower per bank branch for setting up a greenfield enterprise.",
+    "hindi_short_summary": "नवीनतम उद्यम स्थापित करने के लिए SC/ST और महिला उद्यमियों को ₹10 लाख से ₹1 करोड़ का बैंक ऋण।",
+    "category": "scheme",
+    "eligibility": {
+      "min_age": 18,
+      "allowed_genders": ["female"],
+      "allowed_castes": ["sc", "st"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹1,00,00,000",
+      "collateral_free": false
+    }
+  },
+  {
+    "id": "pm_vishwakarma",
+    "name": "PM Vishwakarma Scheme",
+    "hindi_name": "पीएम विश्वकर्मा योजना",
+    "ministry": "Ministry of Micro, Small and Medium Enterprises",
+    "hindi_ministry": "सूक्ष्म, लघु एवं मध्यम उद्यम मंत्रालय",
+    "benefit_headline": "Collateral-free credit up to ₹3 Lakh at 5% interest + ₹15,000 toolkit incentive",
+    "hindi_benefit_headline": "5% ब्याज दर पर ₹3 लाख तक का ऋण + ₹15,000 टूलकिट प्रोत्साहन",
+    "official_link": "https://pmvishwakarma.gov.in/",
+    "short_summary": "End-to-end support to traditional artisans and craftspeople including PM Vishwakarma Certificate, ID Card, skill upgrading, and toolkit incentive.",
+    "hindi_short_summary": "पारंपरिक कारीगरों और शिल्पकारों को टूलकिट प्रोत्साहन, प्रशिक्षण और 5% रियायती ब्याज पर क्रेडिट सहायता।",
+    "category": "scheme",
+    "eligibility": {
+      "min_age": 18,
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"],
+      "allowed_business_types": ["artisan_handicraft", "textile_weaving"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹3,00,000",
+      "benefit_percentage": "5% interest rate",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "mudra_shishu",
+    "name": "Pradhan Mantri MUDRA Yojana (Shishu Loan)",
+    "hindi_name": "प्रधानमंत्री मुद्रा योजना (शिशु ऋण)",
+    "ministry": "Ministry of Finance",
+    "hindi_ministry": "वित्त मंत्रालय",
+    "benefit_headline": "Collateral-free business loan up to ₹50,000",
+    "hindi_benefit_headline": "छोटे व्यवसायों के लिए ₹50,000 तक का बिना गारंटी का ऋण",
+    "official_link": "https://www.mudra.org.in/",
+    "short_summary": "Provides business loans up to ₹50,000 for small entrepreneurs starting micro-enterprises.",
+    "hindi_short_summary": "सूक्ष्म व्यवसाय शुरू करने वाले छोटे उद्यमियों के लिए ₹50,000 तक का बिना गारंटी का बैंक ऋण।",
+    "category": "scheme",
+    "eligibility": {
+      "min_age": 18,
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹50,000",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "mudra_kishore",
+    "name": "Pradhan Mantri MUDRA Yojana (Kishore Loan)",
+    "hindi_name": "प्रधानमंत्री मुद्रा योजना (किशोर ऋण)",
+    "ministry": "Ministry of Finance",
+    "hindi_ministry": "वित्त मंत्रालय",
+    "benefit_headline": "Business loan from ₹50,000 to ₹5 Lakh",
+    "hindi_benefit_headline": "व्यवसाय विस्तार के लिए ₹50,000 से ₹5 लाख तक का ऋण",
+    "official_link": "https://www.mudra.org.in/",
+    "short_summary": "Provides funding from ₹50,000 up to ₹5 lakh for expanding established micro-enterprises.",
+    "hindi_short_summary": "स्थापित सूक्ष्म व्यवसायों के विस्तार हेतु ₹50,000 से ₹5 लाख तक का ऋण।",
+    "category": "scheme",
+    "eligibility": {
+      "min_age": 18,
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹5,00,000",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "mudra_tarun",
+    "name": "Pradhan Mantri MUDRA Yojana (Tarun Loan)",
+    "hindi_name": "प्रधानमंत्री मुद्रा योजना (तरुण ऋण)",
+    "ministry": "Ministry of Finance",
+    "hindi_ministry": "वित्त मंत्रालय",
+    "benefit_headline": "Business loan from ₹5 Lakh to ₹10 Lakh",
+    "hindi_benefit_headline": "व्यवसाय विस्तार के लिए ₹5 लाख से ₹10 लाख तक का ऋण",
+    "official_link": "https://www.mudra.org.in/",
+    "short_summary": "Provides loans from ₹5 lakh up to ₹10 lakh for higher credit requirements of growing small enterprises.",
+    "hindi_short_summary": "बढ़ते छोटे उद्यमों के लिए ₹5 लाख से ₹10 लाख तक का वित्तीय ऋण।",
+    "category": "scheme",
+    "eligibility": {
+      "min_age": 18,
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹10,00,000",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "pm_kisan",
+    "name": "Pradhan Mantri Kisan Samman Nidhi (PM-KISAN)",
+    "hindi_name": "प्रधानमंत्री किसान सम्मान निधि (PM-KISAN)",
+    "ministry": "Ministry of Agriculture and Farmers Welfare",
+    "hindi_ministry": "कृषि एवं किसान कल्याण मंत्रालय",
+    "benefit_headline": "₹6,000 per year income support in 3 equal installments",
+    "hindi_benefit_headline": "सभी भूमिधारक किसान परिवारों को प्रति वर्ष ₹6,000 की वित्तीय सहायता",
+    "official_link": "https://pmkisan.gov.in/",
+    "short_summary": "Direct benefit transfer of ₹6,000 per annum to all landholding farmer families across the country.",
+    "hindi_short_summary": "देश भर के किसान परिवारों को प्रति वर्ष ₹6,000 की प्रत्यक्ष नकद सहायता।",
+    "category": "scheme",
+    "eligibility": {
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"],
+      "allowed_business_types": ["agriculture_allied"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹6,000 per year",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "pm_matsya_sampada",
+    "name": "Pradhan Mantri Matsya Sampada Yojana (PMMSY)",
+    "hindi_name": "प्रधानमंत्री मत्स्य संपदा योजना (PMMSY)",
+    "ministry": "Ministry of Fisheries, Animal Husbandry and Dairying",
+    "hindi_ministry": "मत्स्यपालन, पशुपालन और डेयरी मंत्रालय",
+    "benefit_headline": "Up to 60% financial assistance / subsidy for women and SC/ST fishers",
+    "hindi_benefit_headline": "महिला एवं SC/ST मत्स्य पालकों के लिए 60% तक की वित्तीय सहायता",
+    "official_link": "https://pmmsy.dof.gov.in/",
+    "short_summary": "Scheme to bring about Blue Revolution through sustainable development of fisheries sector with high financial subsidy for marginalized groups.",
+    "hindi_short_summary": "मत्स्य पालन क्षेत्र के विकास के लिए SC/ST और महिला लाभार्थियों को 60% तक की सब्सिडी।",
+    "category": "scheme",
+    "eligibility": {
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"],
+      "allowed_business_types": ["fisheries"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "Up to 60% project cost grant",
+      "benefit_percentage": "60% subsidy for SC/ST/Women",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "pmfme",
+    "name": "PM Formalisation of Micro Food Processing Enterprises (PMFME)",
+    "hindi_name": "पीएम सूक्ष्म खाद्य उद्योग उन्नयन योजना (PMFME)",
+    "ministry": "Ministry of Food Processing Industries",
+    "hindi_ministry": "खाद्य प्रसंस्करण उद्योग मंत्रालय",
+    "benefit_headline": "35% capital subsidy up to ₹10 Lakh for micro food processing units",
+    "hindi_benefit_headline": "सूक्ष्म खाद्य प्रसंस्करण इकाइयों के लिए ₹10 लाख तक 35% पूंजी सब्सिडी",
+    "official_link": "https://pmfme.mofpi.gov.in/",
+    "short_summary": "Financial, technical and business support for micro food processing units like pickle, snacks, bakery, dairy, and spice units.",
+    "hindi_short_summary": "अचार, पापड़, डेयरी व स्नैक्स जैसे सूक्ष्म खाद्य उद्योग स्थापित या अपडेट करने पर ₹10 लाख तक की 35% सब्सिडी।",
+    "category": "scheme",
+    "eligibility": {
+      "min_age": 18,
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"],
+      "allowed_business_types": ["food_processing", "dairy_livestock"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹10,00,000",
+      "benefit_percentage": "35% capital subsidy",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "day_nulm",
+    "name": "Deendayal Antyodaya Yojana - National Urban Livelihoods Mission (DAY-NULM)",
+    "hindi_name": "दीनदयाल अंत्योदय योजना - राष्ट्रीय शहरी आजीविका मिशन (DAY-NULM)",
+    "ministry": "Ministry of Housing and Urban Affairs",
+    "hindi_ministry": "आवास एवं शहरी कार्य मंत्रालय",
+    "benefit_headline": "Subsidized interest credit up to ₹2 Lakh for individual micro-enterprises",
+    "hindi_benefit_headline": "शहरी गरीबों को व्यक्तिगत सूक्ष्म उद्यम हेतु ₹2 लाख तक ब्याज सब्सिडी वाला ऋण",
+    "official_link": "https://nulm.gov.in/",
+    "short_summary": "Reduces poverty of urban poor households by enabling them to access gainful self-employment and skilled wage employment opportunities.",
+    "hindi_short_summary": "शहरी गरीबों को अपना सूक्ष्म उद्योग लगाने के लिए ₹2 लाख तक रियायती ब्याज पर ऋण।",
+    "category": "scheme",
+    "eligibility": {
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"],
+      "allowed_district_types": ["urban", "semi-urban"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹2,00,000",
+      "benefit_percentage": "Interest subsidy above 7%",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "day_nrlm",
+    "name": "Deendayal Antyodaya Yojana - National Rural Livelihoods Mission (DAY-NRLM)",
+    "hindi_name": "दीनदयाल अंत्योदय योजना - राष्ट्रीय ग्रामीण आजीविका मिशन (DAY-NRLM)",
+    "ministry": "Ministry of Rural Development",
+    "hindi_ministry": "ग्रामीण विकास मंत्रालय",
+    "benefit_headline": "Collateral-free loans up to ₹20 Lakh for rural Self Help Groups (SHGs)",
+    "hindi_benefit_headline": "ग्रामीण महिला स्वयं सहायता समूहों (SHG) को ₹20 लाख तक का बिना गारंटी ऋण",
+    "official_link": "https://aajeevika.gov.in/",
+    "short_summary": "Promotes self-employment and organization of rural poor, particularly women, into Self Help Groups to access bank credit at 7% interest rate.",
+    "hindi_short_summary": "ग्रामीण महिलाओं के स्वयं सहायता समूहों को 7% रियायती ब्याज दर पर ₹20 लाख तक का बिना गारंटी ऋण।",
+    "category": "scheme",
+    "eligibility": {
+      "allowed_genders": ["female"],
+      "allowed_castes": ["any"],
+      "allowed_district_types": ["rural"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹20,00,000",
+      "benefit_percentage": "Subsidized 7% interest rate",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "ahidf",
+    "name": "Animal Husbandry Infrastructure Development Fund (AHIDF)",
+    "hindi_name": "पशुपालन अवसंरचना विकास निधि (AHIDF)",
+    "ministry": "Ministry of Fisheries, Animal Husbandry and Dairying",
+    "hindi_ministry": "मत्स्यपालन, पशुपालन और डेयरी मंत्रालय",
+    "benefit_headline": "3% interest subvention and credit guarantee for dairy & meat processing units",
+    "hindi_benefit_headline": "डेयरी विकास व पशुपालन बुनियादी ढांचे पर 3% ब्याज छूट व क्रेडिट गारंटी",
+    "official_link": "https://ahidf.udyamimitra.in/",
+    "short_summary": "Incentivizes investments by individual entrepreneurs, MSMEs, and FPOs in dairy processing and value addition infrastructure.",
+    "hindi_short_summary": "डेयरी प्रोसेसिंग, पशु चारा और मांस प्रसंस्करण इकाइयों के लिए 3% ब्याज सबवेंशन।",
+    "category": "scheme",
+    "eligibility": {
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"],
+      "allowed_business_types": ["dairy_livestock"]
+    },
+    "benefits": {
+      "benefit_percentage": "3% interest subvention",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "pm_awas_rural",
+    "name": "Pradhan Mantri Awaas Yojana - Gramin (PMAY-G)",
+    "hindi_name": "प्रधानमंत्री आवास योजना - ग्रामीण",
+    "ministry": "Ministry of Rural Development",
+    "hindi_ministry": "ग्रामीण विकास मंत्रालय",
+    "benefit_headline": "Financial assistance of ₹1.20 Lakh to ₹1.30 Lakh for house construction",
+    "hindi_benefit_headline": "ग्रामीण बेघर व कच्चे घर वाले परिवारों को ₹1.20 लाख से ₹1.30 लाख की पक्का मकान सहायता",
+    "official_link": "https://pmayg.nic.in/",
+    "short_summary": "Provides financial assistance to rural houseless and households living in kutcha or dilapidated houses for construction of pucca house.",
+    "hindi_short_summary": "ग्रामीण क्षेत्रों में जरूरतमंद परिवारों को पक्का मकान बनाने के लिए ₹1.20 लाख से ₹1.30 लाख की नकद सहायता।",
+    "category": "scheme",
+    "eligibility": {
+      "allowed_genders": ["any"],
+      "allowed_castes": ["any"],
+      "allowed_district_types": ["rural"]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹1,30,000 grant",
+      "collateral_free": true
+    }
+  },
+  {
+    "id": "nmmss",
+    "name": "National Means-Cum-Merit Scholarship Scheme (NMMSS)",
+    "hindi_name": "राष्ट्रीय साधन-सह-योग्यता छात्रवृत्ति योजना (NMMSS)",
+    "ministry": "Ministry of Education",
+    "hindi_ministry": "शिक्षा मंत्रालय",
+    "benefit_headline": "Scholarship of ₹12,000 per year for Class 9 to 12 students",
+    "hindi_benefit_headline": "कक्षा 9 से 12 तक के विद्यार्थियों को ₹12,000 प्रति वर्ष की छात्रवृत्ति",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Provides financial assistance to meritorious students from economically weaker sections to arrest dropout at class VIII and encourage secondary education.",
+    "hindi_short_summary": "आर्थिक रूप से कमजोर वर्गों के मेधावी छात्रों को 8वीं के बाद पढ़ाई जारी रखने हेतु प्रतिवर्ष ₹12,000 की छात्रवृत्ति।",
+    "category": "scholarship",
+    "eligibility": {
+      "max_income": 350000,
+      "education_levels": ["school"],
+      "min_marks_percentage": 55
+    },
+    "benefits": {
+      "scholarship_amount": "₹12,000 per year"
+    }
+  },
+  {
+    "id": "aicte_pragati",
+    "name": "AICTE Pragati Scholarship for Girl Students",
+    "hindi_name": "छात्राओं के लिए एआईसीटीई प्रगति छात्रवृत्ति योजना",
+    "ministry": "Ministry of Education",
+    "hindi_ministry": "शिक्षा मंत्रालय",
+    "benefit_headline": "₹50,000 per year for technical degree/diploma education",
+    "hindi_benefit_headline": "तकनीकी शिक्षा (B.Tech / Diploma) प्राप्त कर रही छात्राओं को ₹50,000 प्रति वर्ष",
+    "official_link": "https://www.aicte-india.org/",
+    "short_summary": "Scholarship scheme to encourage and support girl students taking admission in technical degree or diploma courses in AICTE approved institutions.",
+    "hindi_short_summary": "एआईसीटीई से मान्यता प्राप्त संस्थानों में बी.टेक या डिप्लोमा में अध्ययनरत छात्राओं को प्रतिवर्ष ₹50,000।",
+    "category": "scholarship",
+    "eligibility": {
+      "allowed_genders": ["female"],
+      "max_income": 800000,
+      "education_levels": ["undergraduate", "diploma"],
+      "allowed_course_types": ["technical"]
+    },
+    "benefits": {
+      "scholarship_amount": "₹50,000 per year"
+    }
+  },
+  {
+    "id": "post_matric_sc",
+    "name": "Post-Matric Scholarship for SC Students",
+    "hindi_name": "अनुसूचित जाति के छात्रों के लिए पोस्ट-मैट्रिक छात्रवृत्ति",
+    "ministry": "Ministry of Social Justice and Empowerment",
+    "hindi_ministry": "सामाजिक न्याय एवं अधिकारिता मंत्रालय",
+    "benefit_headline": "Full tuition fee reimbursement + maintenance allowance",
+    "hindi_benefit_headline": "अनुसूचित जाति के छात्रों को पूर्ण शिक्षण शुल्क प्रतिपूर्ति + रखरखाव भत्ता",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Centrally sponsored scheme to provide financial assistance to Scheduled Caste students studying at post-matriculation or post-secondary stage.",
+    "hindi_short_summary": "10वीं के बाद उच्च शिक्षा प्राप्त कर रहे अनुसूचित जाति के छात्रों के लिए पूर्ण शुल्क वापसी योजना।",
+    "category": "scholarship",
+    "eligibility": {
+      "allowed_castes": ["sc"],
+      "max_income": 250000,
+      "education_levels": ["undergraduate", "postgraduate", "diploma"]
+    },
+    "benefits": {
+      "scholarship_amount": "Full tuition fee + maintenance allowance"
+    }
+  },
+  {
+    "id": "post_matric_st",
+    "name": "Post-Matric Scholarship for ST Students",
+    "hindi_name": "अनुसूचित जनजाति के छात्रों के लिए पोस्ट-मैट्रिक छात्रवृत्ति",
+    "ministry": "Ministry of Tribal Affairs",
+    "hindi_ministry": "जनजातीय कार्य मंत्रालय",
+    "benefit_headline": "Complete tuition fee waiver and monthly stipend for ST higher education",
+    "hindi_benefit_headline": "अनुसूचित जनजाति के विद्यार्थियों को कॉलेज शिक्षा हेतु पूरा शुल्क एवं मासिक वजीफा",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Provides complete financial coverage for ST students pursuing post-secondary education in recognized colleges and universities.",
+    "hindi_short_summary": "उच्च शिक्षा प्राप्त कर रहे ST श्रेणी के छात्रों को पूरी फीस वापसी व वजीफा।",
+    "category": "scholarship",
+    "eligibility": {
+      "allowed_castes": ["st"],
+      "max_income": 250000,
+      "education_levels": ["undergraduate", "postgraduate", "diploma"]
+    },
+    "benefits": {
+      "scholarship_amount": "Full tuition fee + monthly stipend"
+    }
+  },
+  {
+    "id": "post_matric_obc",
+    "name": "Post-Matric Scholarship for OBC Students",
+    "hindi_name": "अन्य पिछड़ा वर्ग के छात्रों के लिए पोस्ट-मैट्रिक छात्रवृत्ति",
+    "ministry": "Ministry of Social Justice and Empowerment",
+    "hindi_ministry": "सामाजिक न्याय एवं अधिकारिता मंत्रालय",
+    "benefit_headline": "Financial assistance for OBC students studying post-matriculation courses",
+    "hindi_benefit_headline": "OBC श्रेणी के विद्यार्थियों की कॉलेज व डिप्लोमा शिक्षा हेतु आर्थिक सहायता",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Financial support for OBC students to pursue higher education and professional degree courses.",
+    "hindi_short_summary": "अन्य पिछड़ा वर्ग के विद्यार्थियों के लिए उच्च व तकनीकी शिक्षा शुल्क सहायता।",
+    "category": "scholarship",
+    "eligibility": {
+      "allowed_castes": ["obc"],
+      "max_income": 250000,
+      "education_levels": ["undergraduate", "postgraduate", "diploma"]
+    },
+    "benefits": {
+      "scholarship_amount": "Tuition fee grant + maintenance allowance"
+    }
+  },
+  {
+    "id": "nsp_central_sector",
+    "name": "Central Sector Scheme of Scholarships for College and University Students",
+    "hindi_name": "कॉलेज और विश्वविद्यालय के छात्रों के लिए केंद्रीय क्षेत्र छात्रवृत्ति योजना",
+    "ministry": "Ministry of Education",
+    "hindi_ministry": "शिक्षा मंत्रालय",
+    "benefit_headline": "₹12,000 to ₹20,000 per year for top 80th percentile students",
+    "hindi_benefit_headline": "कक्षा 12 में शीर्ष 80वें प्रतिशतक मेधावी छात्रों को ₹12,000 से ₹20,000 प्रति वर्ष",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Provides financial support to meritorious students from low income families to meet day-to-day expenses while pursuing higher studies.",
+    "hindi_short_summary": "12वीं में उच्च अंक प्राप्त करने वाले जरूरतमंद छात्रों को स्नातक व स्नातकोत्तर पढ़ाई हेतु वार्षिक छात्रवृत्ति।",
+    "category": "scholarship",
+    "eligibility": {
+      "max_income": 450000,
+      "education_levels": ["undergraduate", "postgraduate"],
+      "min_marks_percentage": 80
+    },
+    "benefits": {
+      "scholarship_amount": "₹12,000/yr (UG), ₹20,00,00/yr (PG)"
+    }
+  }
+]

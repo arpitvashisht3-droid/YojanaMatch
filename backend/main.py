@@ -4,8 +4,9 @@ from typing import List, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from models import UserProfile, Scheme, MatchedSchemeResult
+from models import UserProfile, Scheme, MatchedSchemeResult, BhashiniTranslateRequest, BhashiniTranslateResponse
 from matching import match_schemes
+from bhashini import translate_text, is_bhashini_configured
 import google.generativeai as genai
 
 app = FastAPI(
@@ -129,3 +130,31 @@ async def explain_scheme_endpoint(req: ExplainSchemeRequest):
         print(f"Explanation error: {e}")
         fallback = req.scheme.hindi_short_summary if req.language == "hi" else req.scheme.short_summary
         return {"explanation": fallback}
+
+@app.post("/api/bhashini/translate", response_model=BhashiniTranslateResponse)
+async def bhashini_translate_endpoint(req: BhashiniTranslateRequest):
+    """
+    BHASHINI API Translation Endpoint (MeitY AI for Bharat).
+    Translates text between Indian languages and English using official BHASHINI ULCA API.
+    Returns HTTP 503 if BHASHINI credentials are not configured in environment.
+    """
+    if not is_bhashini_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="BHASHINI API credentials not configured. Please set BHASHINI_USER_ID and BHASHINI_API_KEY in environment."
+        )
+    
+    res = translate_text(
+        text=req.text,
+        source_lang=req.source_language,
+        target_lang=req.target_language
+    )
+    
+    if res.get("status") != "success":
+        raise HTTPException(
+            status_code=502,
+            detail=res.get("error") or "BHASHINI translation service error"
+        )
+        
+    return BhashiniTranslateResponse(**res)
+

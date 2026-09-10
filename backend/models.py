@@ -74,3 +74,16 @@ class MatchedSchemeResult(BaseModel):
     total_criteria_checked: int
     match_details: List[MatchScoreDetail]
     ai_explanation: Optional[str] = None
+
+class BhashiniTranslateRequest(BaseModel):
+    text: str = Field(..., description="Source text to translate", min_length=1)
+    source_language: str = Field("en", description="Source ISO language code (e.g. en, hi)")
+    target_language: str = Field("hi", description="Target ISO language code (e.g. hi, en, ta, te)")
+
+class BhashiniTranslateResponse(BaseModel):
+    translated_text: Optional[str] = Field(None, description="Translated text returned from BHASHINI API")
+    source_language: str
+    target_language: str
+    status: str = Field(..., description="Execution status ('success' or 'error')")
+    error: Optional[str] = Field(None, description="Error message if translation failed or credentials unconfigured")
+

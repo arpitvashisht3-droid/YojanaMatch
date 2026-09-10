@@ -13,12 +13,14 @@ import {
   Navigation,
   ExternalLink,
   ShieldCheck,
-  Edit2
+  Edit2,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 import { INDIAN_STATES_AND_UTS, userRecordToProfile } from '../lib/userProfileHelper';
-import { startSpeechRecognition, isSpeechRecognitionSupported } from '../lib/speechService';
+import { startSpeechRecognition, isSpeechRecognitionSupported, speakText, stopSpeaking } from '../lib/speechService';
 import { matchSchemes } from '../lib/matchingEngine';
 import schemesData from '../data/schemes.json';
 import { CasteCategory, DistrictType, BusinessType, Gender, UserRecord, MatchedSchemeResult } from '../types';
@@ -46,6 +48,9 @@ export const OnboardingScreen: React.FC = () => {
   // Voice recording state
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [stopVoiceFn, setStopVoiceFn] = useState<(() => void) | null>(null);
+
+  // Step read-aloud (TTS) state
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   // GPS state
   const [isLocating, setIsLocating] = useState(false);
@@ -114,7 +119,7 @@ export const OnboardingScreen: React.FC = () => {
   };
 
   // Voice Input Toggle
-  const toggleVoiceInput = (targetField: 'name' | 'biz') => {
+  const toggleVoiceInput = (targetField: 'name' | 'biz' | 'state') => {
     if (isVoiceActive) {
       if (stopVoiceFn) stopVoiceFn();
       setIsVoiceActive(false);
@@ -132,6 +137,14 @@ export const OnboardingScreen: React.FC = () => {
           setName(transcript);
         } else if (targetField === 'biz') {
           setCustomBizType(transcript);
+        } else if (targetField === 'state') {
+          const matchedState = INDIAN_STATES_AND_UTS.find((s) =>
+            s.toLowerCase().includes(transcript.toLowerCase()) ||
+            transcript.toLowerCase().includes(s.toLowerCase())
+          );
+          if (matchedState) {
+            setStateName(matchedState);
+          }
         }
       },
       () => setIsVoiceActive(false),
@@ -235,6 +248,45 @@ export const OnboardingScreen: React.FC = () => {
     { num: 6, title: language === 'hi' ? 'आय विवरण' : 'Income Bracket', subtitle: language === 'hi' ? 'वार्षिक अनुमान' : 'Annual income' },
     { num: 7, title: language === 'hi' ? 'पात्रता मिलान' : 'Match Preview', subtitle: language === 'hi' ? 'सत्यापित योजनाएं' : 'Matched schemes' },
   ];
+
+  // Compose the current step's heading + message for read-aloud playback
+  const getCurrentStepSpeechText = (): string => {
+    switch (step) {
+      case 1: return `${t.step1_heading}. ${t.step1_message}`;
+      case 2: return `${t.step2_heading}. ${t.step2_message}`;
+      case 3: return `${t.step3_heading}. ${t.step3_message}`;
+      case 4: return `${t.step4_heading}. ${t.step4_message}`;
+      case 5: return `${t.step5_heading}. ${t.step5_message}`;
+      case 6: return `${t.step6_heading}. ${t.step6_message}`;
+      case 7: return `${t.step7_heading}. ${t.step7_message}`;
+      default: return '';
+    }
+  };
+
+  // Toggle read-aloud playback for the current step's question
+  const handleToggleStepSpeech = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+      setIsSpeaking(false);
+      return;
+    }
+    const textToSpeak = getCurrentStepSpeechText();
+    if (!textToSpeak.trim()) return;
+    setIsSpeaking(true);
+    speakText({
+      text: textToSpeak,
+      language,
+      onEnd: () => setIsSpeaking(false),
+      onError: () => setIsSpeaking(false),
+    });
+  };
+
+  // Stop any ongoing read-aloud playback when the step changes or component unmounts
+  useEffect(() => {
+    return () => {
+      stopSpeaking();
+    };
+  }, [step]);
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
@@ -350,7 +402,20 @@ export const OnboardingScreen: React.FC = () => {
         {/* Right Column (70% width): Interactive Content */}
         <div className="w-full">
           {/* Main Step Container */}
-          <div className="bg-white border border-[#004D40]/15 rounded-2xl shadow-xs p-6 sm:p-8">
+          <div className="bg-white border border-[#004D40]/15 rounded-2xl shadow-xs p-6 sm:p-8 relative">
+            {/* Read-aloud toggle for the current step's question */}
+            <button
+              type="button"
+              onClick={handleToggleStepSpeech}
+              className={`absolute top-4 right-4 sm:top-6 sm:right-6 p-2.5 rounded-full border cursor-pointer z-10 ${
+                isSpeaking
+                  ? 'bg-[#FF6B35]/10 border-[#FF6B35] text-[#FF6B35] animate-pulse'
+                  : 'bg-white border-[#004D40]/20 text-[#004D40]/60 hover:bg-[#004D40]/5'
+              }`}
+              title={isSpeaking ? (language === 'hi' ? 'रोकें' : 'Stop reading') : (language === 'hi' ? 'सुनें' : 'Read aloud')}
+            >
+              {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
             {/* ================= STEP 1: WELCOME ================= */}
             {step === 1 && (
               <div className="text-center py-4 sm:py-6">
@@ -615,18 +680,30 @@ export const OnboardingScreen: React.FC = () => {
                 <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-2">
                   {t.label_state}
                 </label>
-                <select
-                  value={stateName}
-                  onChange={(e) => setStateName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 focus:outline-none focus:border-[#004D40]"
-                >
-                  <option value="">{t.select_state}</option>
-                  {INDIAN_STATES_AND_UTS.map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={stateName}
+                    onChange={(e) => setStateName(e.target.value)}
+                    className="w-full px-4 py-3 pr-12 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 focus:outline-none focus:border-[#004D40]"
+                  >
+                    <option value="">{t.select_state}</option>
+                    {INDIAN_STATES_AND_UTS.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => toggleVoiceInput('state')}
+                    className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-lg cursor-pointer ${
+                      isVoiceActive ? 'bg-red-100 text-red-600 animate-pulse' : 'text-[#004D40]/50 hover:bg-[#004D40]/5'
+                    }`}
+                    title={t.voice_tap_to_speak}
+                  >
+                    {isVoiceActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* District / Area Type Buttons */}

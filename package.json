@@ -1,0 +1,33 @@
+{
+  "name": "yojanamatch-database",
+  "version": "1.0.0",
+  "description": "Unified MongoDB Database Architecture & Models for YojanaMatch",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "seed": "tsx seed/seed.ts",
+    "setup": "npm install && npm run seed",
+    "check-connection": "tsx -e \"import { connectDB, closeDB } from './config/connection.ts'; connectDB().then(db => { console.log('Successfully connected to MongoDB:', db.databaseName); return closeDB(); }).catch(err => { console.error('Connection failed:', err.message); process.exit(1); });\"",
+    "validate": "tsc --noEmit"
+  },
+  "keywords": [
+    "mongodb",
+    "yojanamatch",
+    "database",
+    "schemes",
+    "scholarships"
+  ],
+  "author": "YojanaMatch Team",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "mongodb": "^6.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.10",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3"
+  }
+}

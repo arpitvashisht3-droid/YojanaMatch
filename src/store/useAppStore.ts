@@ -26,6 +26,8 @@ interface AppState {
   queryCache: Record<string, { profile: UserProfile; results: MatchedSchemeResult[] }>;
   error: string | null;
   recommendationsLayout: '3column' | 'stacked';
+  bhashiniTranslating: boolean;
+  bhashiniError: string | null;
 
   // Actions
   setLanguage: (lang: AppLanguage) => void;
@@ -43,6 +45,7 @@ interface AppState {
   resetAll: () => void;
   fetchExplanation: (schemeId: string) => Promise<void>;
   updateExtractedProfileAndRematch: (updates: Partial<UserProfile>) => Promise<void>;
+  translateTextWithBhashini: (text: string, sourceLang?: string, targetLang?: string) => Promise<string | null>;
 
   // Auth & Onboarding Actions
   initAuthSession: () => Promise<void>;
@@ -70,6 +73,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   queryCache: {},
   error: null,
   recommendationsLayout: '3column',
+  bhashiniTranslating: false,
+  bhashiniError: null,
 
   setLanguage: (lang) => set({ language: lang }),
   setContentMode: (mode) => {
@@ -402,6 +407,41 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
     const cacheKey = `${contentMode}:${language}:${inputText.trim().toLowerCase()}`;
     await runMatchingAndResults(updatedProfile, cacheKey, set, get);
+  },
+
+  translateTextWithBhashini: async (text: string, sourceLang = 'en', targetLang = 'hi'): Promise<string | null> => {
+    if (!text || !text.trim()) return null;
+    set({ bhashiniTranslating: true, bhashiniError: null });
+    try {
+      const res = await fetch('/api/bhashini/translate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          source_language: sourceLang,
+          target_language: targetLang,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        set({ bhashiniTranslating: false });
+        if (data.status === 'success' && data.translated_text) {
+          return data.translated_text;
+        }
+      } else if (res.status === 503) {
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData.error || 'BHASHINI credentials not configured (503 Service Unavailable).';
+        set({ bhashiniTranslating: false, bhashiniError: msg });
+        return null;
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        set({ bhashiniTranslating: false, bhashiniError: errData.error || 'Translation failed' });
+      }
+    } catch (err: any) {
+      set({ bhashiniTranslating: false, bhashiniError: err?.message || 'Translation network error' });
+    }
+    return null;
   },
 }));
 

@@ -1,0 +1,884 @@
+[
+  {
+    "id": "nmmss",
+    "name": "National Means-Cum-Merit Scholarship Scheme (NMMSS)",
+    "hindi_name": "राष्ट्रीय साधन-सह-योग्यता छात्रवृत्ति योजना (NMMSS)",
+    "ministry": "Ministry of Education (Department of School Education & Literacy)",
+    "hindi_ministry": "शिक्षा मंत्रालय (स्कूल शिक्षा और साक्षरता विभाग)",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Provides financial assistance to meritorious students from economically weaker sections to arrest dropout at class VIII and encourage secondary stage education.",
+    "hindi_short_summary": "आर्थिक रूप से कमजोर वर्गों के मेधावी छात्रों को 8वीं कक्षा के बाद पढ़ाई छोड़ने से रोकने और माध्यमिक शिक्षा पूरी करने हेतु छात्रवृत्ति।",
+    "popularity_score": 97,
+    "date_added": "2026-08-20",
+    "applicable_states": [
+      "All India",
+      "Uttar Pradesh",
+      "Bihar",
+      "Odisha",
+      "Rajasthan",
+      "Madhya Pradesh",
+      "West Bengal",
+      "Maharashtra"
+    ],
+    "category_tags": [
+      "all",
+      "merit",
+      "need_based",
+      "pre_matric"
+    ],
+    "eligibility": {
+      "min_age": 12,
+      "max_age": 18,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "sc",
+        "st",
+        "obc",
+        "minority",
+        "ews",
+        "general",
+        "any"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 350000,
+      "education_levels": [
+        "school"
+      ],
+      "minimum_marks_percentage": 55,
+      "course_types": [
+        "general",
+        "any"
+      ],
+      "priority_groups": [
+        "Economically Weaker",
+        "Rural Students",
+        "Government Schools"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹48,000",
+      "hindi_max_loan_or_grant": "₹48,000",
+      "collateral_free": true,
+      "benefit_percentage": "100% Direct Benefit Transfer (DBT)",
+      "hindi_benefit_percentage": "100% प्रत्यक्ष लाभ अंतरण (DBT)"
+    },
+    "benefit_headline": "₹12,000 per annum (₹1,000/month) from Class 9 to Class 12 (Total ₹48,000)",
+    "hindi_benefit_headline": "कक्षा 9 से 12 तक ₹12,000 प्रति वर्ष (₹1,000/माह) प्रत्यक्ष छात्रवृत्ति सहायता"
+  },
+  {
+    "id": "post_matric_sc",
+    "name": "Centrally Sponsored Post-Matric Scholarship for SC Students",
+    "hindi_name": "अनुसूचित जाति (SC) छात्रों के लिए पोस्ट-मैट्रिक छात्रवृत्ति योजना",
+    "ministry": "Ministry of Social Justice and Empowerment",
+    "hindi_ministry": "सामाजिक न्याय और अधिकारिता मंत्रालय",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Comprehensive financial support for Scheduled Caste students pursuing post-matriculation courses from Class 11 up to Post-Doctoral degrees.",
+    "hindi_short_summary": "कक्षा 11 से लेकर स्नातकोत्तर और अनुसंधान तक अनुसूचित जाति के विद्यार्थियों के लिए संपूर्ण फीस प्रतिपूर्ति व भत्ता।",
+    "popularity_score": 96,
+    "date_added": "2026-08-18",
+    "applicable_states": [
+      "All India",
+      "Uttar Pradesh",
+      "Bihar",
+      "Rajasthan",
+      "Punjab",
+      "Maharashtra",
+      "Tamil Nadu",
+      "Karnataka"
+    ],
+    "category_tags": [
+      "all",
+      "sc_st",
+      "need_based",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 15,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "sc"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 250000,
+      "education_levels": [
+        "school",
+        "undergraduate",
+        "postgraduate",
+        "diploma"
+      ],
+      "minimum_marks_percentage": 45,
+      "course_types": [
+        "general",
+        "technical",
+        "medical",
+        "vocational",
+        "any"
+      ],
+      "priority_groups": [
+        "SC Students",
+        "Post-Matric Higher Education"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "Full Tuition + ₹13,500/yr",
+      "hindi_max_loan_or_grant": "पूरी ट्यूशन फीस + ₹13,500/वर्ष",
+      "collateral_free": true,
+      "benefit_percentage": "100% Government Paid",
+      "hindi_benefit_percentage": "100% सरकारी भुगतान"
+    },
+    "benefit_headline": "100% Compulsory Non-Refundable College Fees Waiver + up to ₹13,500/yr Academic Allowance",
+    "hindi_benefit_headline": "100% अनिवार्य कॉलेज फीस प्रतिपूर्ति + ₹13,500/वर्ष तक शैक्षणिक रखरखाव भत्ता"
+  },
+  {
+    "id": "post_matric_st",
+    "name": "Post-Matric Scholarship Scheme for ST Students",
+    "hindi_name": "अनुसूचित जनजाति (ST) छात्रों के लिए पोस्ट-मैट्रिक छात्रवृत्ति",
+    "ministry": "Ministry of Tribal Affairs",
+    "hindi_ministry": "जनजातीय कार्य मंत्रालय",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Substantial financial assistance to Scheduled Tribe students studying at recognized post-secondary institutions across all disciplines.",
+    "hindi_short_summary": "मान्यता प्राप्त कॉलेजों और विश्वविद्यालयों में अध्ययनरत अनुसूचित जनजाति के छात्रों के लिए पूर्ण वित्तीय सहायता।",
+    "popularity_score": 93,
+    "date_added": "2026-08-14",
+    "applicable_states": [
+      "All India",
+      "Jharkhand",
+      "Odisha",
+      "Madhya Pradesh",
+      "Chhattisgarh",
+      "Assam",
+      "Rajasthan",
+      "Gujarat"
+    ],
+    "category_tags": [
+      "all",
+      "sc_st",
+      "need_based",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 15,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "st"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 250000,
+      "education_levels": [
+        "school",
+        "undergraduate",
+        "postgraduate",
+        "diploma"
+      ],
+      "minimum_marks_percentage": 45,
+      "course_types": [
+        "general",
+        "technical",
+        "medical",
+        "vocational",
+        "any"
+      ],
+      "priority_groups": [
+        "ST Students",
+        "Tribal Communities"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "Full Course Fees + Allowance",
+      "hindi_max_loan_or_grant": "पूर्ण कोर्स फीस + मासिक भत्ता",
+      "collateral_free": true,
+      "benefit_percentage": "100% Direct DBT",
+      "hindi_benefit_percentage": "100% सीधा बैंक खाता अंतरण"
+    },
+    "benefit_headline": "Full Tuition Fee Reimbursement + Monthly Maintenance Allowance up to ₹1,200/month",
+    "hindi_benefit_headline": "पूरी शिक्षण फीस प्रतिपूर्ति + ₹1,200/माह तक रखरखाव भत्ता"
+  },
+  {
+    "id": "post_matric_obc",
+    "name": "Post-Matric Scholarship for Other Backward Classes (OBC/EBC)",
+    "hindi_name": "अन्य पिछड़ा वर्ग (OBC/EBC) छात्रों के लिए पोस्ट-मैट्रिक छात्रवृत्ति",
+    "ministry": "Ministry of Social Justice and Empowerment",
+    "hindi_ministry": "सामाजिक न्याय और अधिकारिता मंत्रालय",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Assists OBC students at post-matriculation stages to pursue college degrees, professional certifications, and technical diplomas.",
+    "hindi_short_summary": "कक्षा 11 के बाद डिग्री, डिप्लोमा और तकनीकी पाठ्यक्रमों के लिए ओबीसी वर्ग के छात्रों हेतु छात्रवृत्ति सहायता।",
+    "popularity_score": 92,
+    "date_added": "2026-08-10",
+    "applicable_states": [
+      "All India",
+      "Uttar Pradesh",
+      "Bihar",
+      "Rajasthan",
+      "Madhya Pradesh",
+      "Maharashtra",
+      "Haryana"
+    ],
+    "category_tags": [
+      "all",
+      "need_based",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 15,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "obc",
+        "ews"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 250000,
+      "education_levels": [
+        "school",
+        "undergraduate",
+        "postgraduate",
+        "diploma"
+      ],
+      "minimum_marks_percentage": 50,
+      "course_types": [
+        "general",
+        "technical",
+        "medical",
+        "vocational",
+        "any"
+      ],
+      "priority_groups": [
+        "OBC Students",
+        "Economically Backward Classes"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "Up to ₹20,000/yr",
+      "hindi_max_loan_or_grant": "₹20,000/वर्ष तक",
+      "collateral_free": true,
+      "benefit_percentage": "Direct Fee & Allowance Grant",
+      "hindi_benefit_percentage": "प्रत्यक्ष फीस व भत्ता अनुदान"
+    },
+    "benefit_headline": "Tuition fee reimbursement + academic maintenance allowance up to ₹10,000/yr",
+    "hindi_benefit_headline": "ट्यूशन फीस प्रतिपूर्ति + ₹10,000/वर्ष तक शैक्षणिक रखरखाव भत्ता"
+  },
+  {
+    "id": "aicte_pragati",
+    "name": "AICTE Pragati Scholarship Scheme for Girl Students",
+    "hindi_name": "छात्राओं के लिए एआईसीटीई प्रगति छात्रवृत्ति योजना",
+    "ministry": "All India Council for Technical Education (AICTE) / Ministry of Education",
+    "hindi_ministry": "अखिल भारतीय तकनीकी शिक्षा परिषद (AICTE) / शिक्षा मंत्रालय",
+    "official_link": "https://www.aicte-india.org/schemes/students-development-schemes/Pragati",
+    "short_summary": "Empowers female students pursuing technical engineering degrees or polytechnic diplomas in AICTE-approved institutions with substantial annual cash grants.",
+    "hindi_short_summary": "एआईसीटीई से मान्यता प्राप्त संस्थानों में बीटेक, बीई या इंजीनियरिंग डिप्लोमा कर रही मेधावी छात्राओं के लिए ₹50,000 वार्षिक छात्रवृत्ति।",
+    "popularity_score": 99,
+    "date_added": "2026-08-25",
+    "applicable_states": [
+      "All India",
+      "Maharashtra",
+      "Tamil Nadu",
+      "Karnataka",
+      "Uttar Pradesh",
+      "Delhi",
+      "Gujarat",
+      "Rajasthan"
+    ],
+    "category_tags": [
+      "all",
+      "girl_child",
+      "merit",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 16,
+      "max_age": 30,
+      "allowed_genders": [
+        "female"
+      ],
+      "allowed_castes": [
+        "sc",
+        "st",
+        "obc",
+        "minority",
+        "ews",
+        "general",
+        "any"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 800000,
+      "education_levels": [
+        "undergraduate",
+        "diploma"
+      ],
+      "minimum_marks_percentage": 50,
+      "course_types": [
+        "technical"
+      ],
+      "priority_groups": [
+        "Girl Students",
+        "Technical Education",
+        "Women in STEM"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹2,00,000 (₹50k/yr x 4 yrs)",
+      "hindi_max_loan_or_grant": "₹2,00,000 (₹50,000/वर्ष x 4 वर्ष)",
+      "collateral_free": true,
+      "benefit_percentage": "100% Cash Grant",
+      "hindi_benefit_percentage": "100% नकद अनुदान"
+    },
+    "benefit_headline": "₹50,000 per annum for every year of technical degree or diploma study (Max 2 girls per family)",
+    "hindi_benefit_headline": "तकनीकी डिग्री या डिप्लोमा के प्रत्येक वर्ष के लिए ₹50,000 प्रति वर्ष (प्रति परिवार 2 बेटियां)"
+  },
+  {
+    "id": "central_sector_csss",
+    "name": "Central Sector Scheme of Scholarship for College and University Students (CSSS)",
+    "hindi_name": "कॉलेज एवं विश्वविद्यालय छात्रों हेतु केंद्रीय क्षेत्र छात्रवृत्ति (CSSS)",
+    "ministry": "Ministry of Education (Department of Higher Education)",
+    "hindi_ministry": "शिक्षा मंत्रालय (उच्च शिक्षा विभाग)",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Merit-cum-means scholarship for top 80th-percentile students from Class 12 board examinations pursuing regular graduate and master's degree courses.",
+    "hindi_short_summary": "12वीं बोर्ड में शीर्ष 80 परसेंटाइल लाने वाले नियमित कॉलेज विद्यार्थियों के लिए केंद्र सरकार की प्रतिष्ठित मेरिट छात्रवृत्ति।",
+    "popularity_score": 95,
+    "date_added": "2026-08-16",
+    "applicable_states": [
+      "All India",
+      "Uttar Pradesh",
+      "Maharashtra",
+      "West Bengal",
+      "Bihar",
+      "Kerala",
+      "Madhya Pradesh"
+    ],
+    "category_tags": [
+      "all",
+      "merit",
+      "need_based",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 17,
+      "max_age": 25,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "sc",
+        "st",
+        "obc",
+        "minority",
+        "ews",
+        "general",
+        "any"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 450000,
+      "education_levels": [
+        "undergraduate",
+        "postgraduate"
+      ],
+      "minimum_marks_percentage": 80,
+      "course_types": [
+        "general",
+        "technical",
+        "medical"
+      ],
+      "priority_groups": [
+        "Top 80th Percentile Merit",
+        "Regular College Students"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "Up to ₹70,000 Total",
+      "hindi_max_loan_or_grant": "कुल ₹70,000 तक",
+      "collateral_free": true,
+      "benefit_percentage": "Direct Bank Transfer",
+      "hindi_benefit_percentage": "प्रत्यक्ष बैंक हस्तांतरण"
+    },
+    "benefit_headline": "₹12,000/yr for Graduation (1st-3rd year) and ₹20,000/yr for Post-Graduation",
+    "hindi_benefit_headline": "स्नातक के लिए ₹12,000/वर्ष और स्नातकोत्तर के लिए ₹20,000/वर्ष प्रत्यक्ष छात्रवृत्ति"
+  },
+  {
+    "id": "pmss_capf",
+    "name": "Prime Minister's Scholarship Scheme (PMSS) for CAPF & Assam Rifles",
+    "hindi_name": "केंद्रीय सशस्त्र पुलिस बलों (CAPF) हेतु प्रधानमंत्री छात्रवृत्ति योजना",
+    "ministry": "Ministry of Home Affairs (Welfare & Rehabilitation Board)",
+    "hindi_ministry": "गृह मंत्रालय (कल्याण एवं पुनर्वास बोर्ड)",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Encourages higher technical and professional education (BTech, MBBS, BDS, BPharm, MBA, MCA) for wards and widows of defense and CAPF personnel.",
+    "hindi_short_summary": "सशस्त्र बलों के आश्रितों के लिए इंजीनियरिंग, मेडिकल, प्रबंधन व अन्य व्यावसायिक उच्च शिक्षा हेतु मासिक छात्रवृत्ति।",
+    "popularity_score": 91,
+    "date_added": "2026-08-05",
+    "applicable_states": [
+      "All India",
+      "Rajasthan",
+      "Haryana",
+      "Punjab",
+      "Uttar Pradesh",
+      "Uttarakhand",
+      "Himachal Pradesh",
+      "Jammu and Kashmir"
+    ],
+    "category_tags": [
+      "all",
+      "merit",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 17,
+      "max_age": 28,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "sc",
+        "st",
+        "obc",
+        "minority",
+        "ews",
+        "general",
+        "any"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "education_levels": [
+        "undergraduate",
+        "postgraduate"
+      ],
+      "minimum_marks_percentage": 60,
+      "course_types": [
+        "technical",
+        "medical",
+        "general"
+      ],
+      "priority_groups": [
+        "Wards of CAPF / Ex-Servicemen",
+        "Higher Professional Degrees"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹36,000/yr for Girls, ₹30,000/yr for Boys",
+      "hindi_max_loan_or_grant": "छात्राओं को ₹36,000/वर्ष, छात्रों को ₹30,000/वर्ष",
+      "collateral_free": true,
+      "benefit_percentage": "Monthly DBT Stipend",
+      "hindi_benefit_percentage": "मासिक प्रत्यक्ष छात्रवृत्ति"
+    },
+    "benefit_headline": "₹3,000/month for Girls (₹36,000/yr) and ₹2,500/month for Boys (₹30,000/yr) in Professional Courses",
+    "hindi_benefit_headline": "छात्राओं को ₹3,000/माह (₹36,000/वर्ष) तथा छात्रों को ₹2,500/माह व्यावसायिक पाठ्यक्रमों हेतु"
+  },
+  {
+    "id": "pre_matric_minority",
+    "name": "Pre-Matric Scholarship Scheme for Minorities",
+    "hindi_name": "अल्पसंख्यकों के लिए प्री-मैट्रिक छात्रवृत्ति योजना",
+    "ministry": "Ministry of Minority Affairs",
+    "hindi_ministry": "अल्पसंख्यक कार्य मंत्रालय",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Supports students from notified minority communities (Muslims, Christians, Sikhs, Buddhists, Jains, Parsis) studying in classes 9 and 10.",
+    "hindi_short_summary": "अधिसूचित अल्पसंख्यक समुदाय के कक्षा 9 और 10 में अध्ययनरत विद्यार्थियों के लिए फीस व रखरखाव सहायता।",
+    "popularity_score": 90,
+    "date_added": "2026-07-28",
+    "applicable_states": [
+      "All India",
+      "Uttar Pradesh",
+      "West Bengal",
+      "Bihar",
+      "Kerala",
+      "Assam",
+      "Maharashtra",
+      "Jammu and Kashmir"
+    ],
+    "category_tags": [
+      "all",
+      "minority",
+      "need_based",
+      "pre_matric"
+    ],
+    "eligibility": {
+      "min_age": 13,
+      "max_age": 17,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "minority"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 100000,
+      "education_levels": [
+        "school"
+      ],
+      "minimum_marks_percentage": 50,
+      "course_types": [
+        "general",
+        "any"
+      ],
+      "priority_groups": [
+        "Minority Communities",
+        "Low Income Families"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "Up to ₹9,000/yr",
+      "hindi_max_loan_or_grant": "₹9,000/वर्ष तक",
+      "collateral_free": true,
+      "benefit_percentage": "100% Government Grant",
+      "hindi_benefit_percentage": "100% सरकारी अनुदान"
+    },
+    "benefit_headline": "Course admission & tuition fees up to ₹4,000/yr + maintenance allowance up to ₹5,000/yr",
+    "hindi_benefit_headline": "ट्यूशन फीस प्रतिपूर्ति ₹4,000/वर्ष + रखरखाव भत्ता ₹5,000/वर्ष (कक्षा 9 व 10)"
+  },
+  {
+    "id": "aicte_saksham",
+    "name": "AICTE Saksham Scholarship Scheme for Differently-Abled Students",
+    "hindi_name": "दिव्यांग विद्यार्थियों हेतु एआईसीटीई सक्षम छात्रवृत्ति",
+    "ministry": "All India Council for Technical Education (AICTE)",
+    "hindi_ministry": "अखिल भारतीय तकनीकी शिक्षा परिषद (AICTE)",
+    "official_link": "https://www.aicte-india.org/",
+    "short_summary": "Dedicated financial aid for differently-abled students having not less than 40% disability admitted to technical diploma or degree courses.",
+    "hindi_short_summary": "40% या अधिक दिव्यांगता वाले छात्रों को इंजीनियरिंग डिग्री या डिप्लोमा की पढ़ाई पूरी करने हेतु ₹50,000 वार्षिक सहायता।",
+    "popularity_score": 89,
+    "date_added": "2026-07-20",
+    "applicable_states": [
+      "All India",
+      "Maharashtra",
+      "Delhi",
+      "Tamil Nadu",
+      "Karnataka",
+      "Uttar Pradesh",
+      "Gujarat"
+    ],
+    "category_tags": [
+      "all",
+      "disability",
+      "merit",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 16,
+      "max_age": 35,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "sc",
+        "st",
+        "obc",
+        "minority",
+        "ews",
+        "general",
+        "any"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "requires_differently_abled": true,
+      "max_income_inr": 800000,
+      "education_levels": [
+        "undergraduate",
+        "diploma"
+      ],
+      "minimum_marks_percentage": 45,
+      "course_types": [
+        "technical"
+      ],
+      "priority_groups": [
+        "Persons with Disabilities (PwD)",
+        "Technical Higher Education"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹2,00,000 (₹50k/yr)",
+      "hindi_max_loan_or_grant": "₹2,00,000 (₹50,000/वर्ष)",
+      "collateral_free": true,
+      "benefit_percentage": "100% Direct DBT Assistance",
+      "hindi_benefit_percentage": "100% प्रत्यक्ष डीबीटी सहायता"
+    },
+    "benefit_headline": "₹50,000 per annum for tuition fees, computer purchase, software, and study aids",
+    "hindi_benefit_headline": "शिक्षण शुल्क, कंप्यूटर, सॉफ्टवेयर एवं अध्ययन सामग्री हेतु ₹50,000 प्रति वर्ष"
+  },
+  {
+    "id": "begum_hazrat_mahal",
+    "name": "Begum Hazrat Mahal National Scholarship for Minority Girls",
+    "hindi_name": "अल्पसंख्यक छात्राओं हेतु बेगम हज़रत महल राष्ट्रीय छात्रवृत्ति",
+    "ministry": "Maulana Azad Education Foundation / Ministry of Minority Affairs",
+    "hindi_ministry": "मौलाना आजाद शिक्षा प्रतिष्ठान / अल्पसंख्यक कार्य मंत्रालय",
+    "official_link": "https://scholarships.gov.in/",
+    "short_summary": "Financial support to meritorious girl students belonging to national minority communities to encourage school continuation through higher secondary.",
+    "hindi_short_summary": "अल्पसंख्यक समुदाय की मेधावी बालिकाओं को 9वीं से 12वीं कक्षा तक पढ़ाई जारी रखने हेतु प्रत्यक्ष वित्तीय अनुदान।",
+    "popularity_score": 94,
+    "date_added": "2026-08-01",
+    "applicable_states": [
+      "All India",
+      "Uttar Pradesh",
+      "Bihar",
+      "West Bengal",
+      "Kerala",
+      "Telangana",
+      "Delhi"
+    ],
+    "category_tags": [
+      "all",
+      "minority",
+      "girl_child",
+      "pre_matric",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 13,
+      "max_age": 19,
+      "allowed_genders": [
+        "female"
+      ],
+      "allowed_castes": [
+        "minority"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 200000,
+      "education_levels": [
+        "school"
+      ],
+      "minimum_marks_percentage": 50,
+      "course_types": [
+        "general",
+        "any"
+      ],
+      "priority_groups": [
+        "Minority Girls",
+        "Secondary & Higher Secondary"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹6,000/yr",
+      "hindi_max_loan_or_grant": "₹6,000/वर्ष",
+      "collateral_free": true,
+      "benefit_percentage": "100% Direct Cash Grant",
+      "hindi_benefit_percentage": "100% प्रत्यक्ष नकद अनुदान"
+    },
+    "benefit_headline": "₹5,000 for Class 9-10 and ₹6,000 for Class 11-12 directly into student's bank account",
+    "hindi_benefit_headline": "कक्षा 9-10 के लिए ₹5,000 और कक्षा 11-12 के लिए ₹6,000 प्रत्यक्ष बैंक खाता अनुदान"
+  },
+  {
+    "id": "inspire_she",
+    "name": "INSPIRE Scholarship for Higher Education (SHE)",
+    "hindi_name": "उच्च शिक्षा हेतु इंस्पायर छात्रवृत्ति (INSPIRE SHE)",
+    "ministry": "Department of Science & Technology (DST), Ministry of Science & Technology",
+    "hindi_ministry": "विज्ञान एवं प्रौद्योगिकी विभाग (DST)",
+    "official_link": "https://online-inspire.gov.in/",
+    "short_summary": "Attracts meritorious youth to study natural and basic sciences (BSc, BS, Int. MSc) with handsome 5-year fellowships and research attachments.",
+    "hindi_short_summary": "विज्ञान संकाय में स्नातक एवं स्नातकोत्तर (BSc/MSc) करने वाले शीर्ष मेधावी छात्रों हेतु ₹80,000 वार्षिक प्रतिष्ठित फेलोशिप।",
+    "popularity_score": 93,
+    "date_added": "2026-07-15",
+    "applicable_states": [
+      "All India",
+      "Maharashtra",
+      "Tamil Nadu",
+      "Karnataka",
+      "West Bengal",
+      "Kerala",
+      "Uttar Pradesh",
+      "Odisha"
+    ],
+    "category_tags": [
+      "all",
+      "merit",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 17,
+      "max_age": 22,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "sc",
+        "st",
+        "obc",
+        "minority",
+        "ews",
+        "general",
+        "any"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "education_levels": [
+        "undergraduate",
+        "postgraduate"
+      ],
+      "minimum_marks_percentage": 85,
+      "course_types": [
+        "general"
+      ],
+      "priority_groups": [
+        "Top 1% in Class 12 Board",
+        "Pure & Basic Science Streams"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "₹4,00,000 (₹80k/yr x 5 yrs)",
+      "hindi_max_loan_or_grant": "₹4,00,000 (₹80,000/वर्ष x 5 वर्ष)",
+      "collateral_free": true,
+      "benefit_percentage": "Premier Central Fellowship",
+      "hindi_benefit_percentage": "प्रतिष्ठित केंद्रीय फेलोशिप"
+    },
+    "benefit_headline": "₹80,000 per year (₹60,000 scholarship + ₹20,000 annual mentorship research grant)",
+    "hindi_benefit_headline": "₹80,000 प्रति वर्ष (₹60,000 नकद छात्रवृत्ति + ₹20,000 ग्रीष्मकालीन शोध अनुदान)"
+  },
+  {
+    "id": "svmcm_merit_means",
+    "name": "Swami Vivekananda Merit-cum-Means Scholarship (SVMCM)",
+    "hindi_name": "स्वामी विवेकानंद मेरिट-कम-मीन्स छात्रवृत्ति (SVMCM)",
+    "ministry": "Higher Education Department / Pan-India State Model",
+    "hindi_ministry": "उच्च शिक्षा विभाग",
+    "official_link": "https://svmcm.wbhed.gov.in/",
+    "short_summary": "Assists meritorious students facing financial hardship across general degree, polytechnic, technical, and medical studies.",
+    "hindi_short_summary": "आर्थिक रूप से पिछड़े मेधावी छात्रों को उच्च माध्यमिक से लेकर इंजीनियरिंग व मेडिकल तक पढ़ाई हेतु आकर्षक वित्तीय सहायता।",
+    "popularity_score": 92,
+    "date_added": "2026-07-10",
+    "applicable_states": [
+      "All India",
+      "West Bengal",
+      "Odisha",
+      "Jharkhand",
+      "Bihar",
+      "Assam"
+    ],
+    "category_tags": [
+      "all",
+      "merit",
+      "need_based",
+      "post_matric"
+    ],
+    "eligibility": {
+      "min_age": 16,
+      "max_age": 28,
+      "allowed_genders": [
+        "female",
+        "male",
+        "transgender",
+        "any"
+      ],
+      "allowed_castes": [
+        "sc",
+        "st",
+        "obc",
+        "minority",
+        "ews",
+        "general",
+        "any"
+      ],
+      "allowed_district_types": [
+        "rural",
+        "urban",
+        "semi-urban",
+        "any"
+      ],
+      "max_income_inr": 250000,
+      "education_levels": [
+        "school",
+        "undergraduate",
+        "postgraduate",
+        "diploma"
+      ],
+      "minimum_marks_percentage": 60,
+      "course_types": [
+        "general",
+        "technical",
+        "medical",
+        "diploma"
+      ],
+      "priority_groups": [
+        "Merit cum Means",
+        "Higher Secondary & College"
+      ]
+    },
+    "benefits": {
+      "max_loan_or_grant": "Up to ₹60,000/yr",
+      "hindi_max_loan_or_grant": "₹60,000/वर्ष तक",
+      "collateral_free": true,
+      "benefit_percentage": "Annual DBT Grant",
+      "hindi_benefit_percentage": "वार्षिक प्रत्यक्ष बैंक अनुदान"
+    },
+    "benefit_headline": "₹12,000 to ₹60,000 per year for Higher Secondary, Degree, Engineering, and Medical Students",
+    "hindi_benefit_headline": "उच्चतर माध्यमिक, स्नातक, इंजीनियरिंग एवं मेडिकल छात्रों को ₹12,000 से ₹60,000 प्रति वर्ष"
+  }
+]

@@ -12,6 +12,7 @@ import {
   Building2,
   Coins,
   AlertCircle,
+  Languages,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
@@ -30,12 +31,27 @@ export const ResultsScreen: React.FC = () => {
     resetAll,
     audioPlayingSchemeId,
     setAudioPlaying,
+    bhashiniTranslating,
+    bhashiniError,
+    translateTextWithBhashini,
   } = useAppStore();
   const t = translations[language];
 
+  const [bhashiniTranslationMap, setBhashiniTranslationMap] = useState<Record<string, string>>({});
   const [ttsErrorIds, setTtsErrorIds] = useState<string[]>([]);
   const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
   const [highlightMode, setHighlightMode] = useState<'word' | 'paragraph'>('word');
+
+  const handleBhashiniTranslate = async (scheme: any) => {
+    const textToTranslate = scheme.short_summary || scheme.name;
+    const targetLang = language === 'hi' ? 'hi' : 'en';
+    const sourceLang = language === 'hi' ? 'en' : 'hi';
+
+    const result = await translateTextWithBhashini(textToTranslate, sourceLang, targetLang);
+    if (result) {
+      setBhashiniTranslationMap((prev) => ({ ...prev, [scheme.id]: result }));
+    }
+  };
 
   // Audio cleanup on unmount
   useEffect(() => {
@@ -326,30 +342,56 @@ export const ResultsScreen: React.FC = () => {
                           {t.card_plain_explanation}
                         </span>
                       </div>
-                      {!isTtsHidden && (
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={(e) => handleToggleAudio(e, res)}
-                          className={`touch-target text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 transition-all cursor-pointer ${
-                            isPlayingAudio
-                              ? 'bg-[#FF6B35] text-white shadow-xs'
-                              : 'bg-[#004D40]/5 hover:bg-[#FF6B35] text-[#004D40] hover:text-white'
-                          }`}
+                          onClick={() => handleBhashiniTranslate(scheme)}
+                          disabled={bhashiniTranslating}
+                          className="touch-target text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 transition-all cursor-pointer bg-[#004D40]/5 hover:bg-[#004D40]/10 text-[#004D40] border border-[#004D40]/10 disabled:opacity-50"
+                          title="Translate summary using MeitY BHASHINI AI API"
                         >
-                          {isPlayingAudio ? (
-                            <>
-                              <VolumeX className="w-3.5 h-3.5" />
-                              <span>{t.card_listening_stop}</span>
-                            </>
-                          ) : (
-                            <>
-                              <Volume2 className="w-3.5 h-3.5" />
-                              <span>{t.card_listen_explanation}</span>
-                            </>
-                          )}
+                          <Languages className="w-3.5 h-3.5 text-[#FF6B35]" />
+                          <span>{bhashiniTranslating ? 'Translating...' : 'BHASHINI Translate'}</span>
                         </button>
-                      )}
+                        {!isTtsHidden && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleToggleAudio(e, res)}
+                            className={`touch-target text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5 transition-all cursor-pointer ${
+                              isPlayingAudio
+                                ? 'bg-[#FF6B35] text-white shadow-xs'
+                                : 'bg-[#004D40]/5 hover:bg-[#FF6B35] text-[#004D40] hover:text-white'
+                            }`}
+                          >
+                            {isPlayingAudio ? (
+                              <>
+                                <VolumeX className="w-3.5 h-3.5" />
+                                <span>{t.card_listening_stop}</span>
+                              </>
+                            ) : (
+                              <>
+                                <Volume2 className="w-3.5 h-3.5" />
+                                <span>{t.card_listen_explanation}</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
+
+                    {bhashiniError && (
+                      <div className="text-xs text-amber-800 bg-amber-50 p-2.5 rounded-xl border border-amber-200 flex items-center gap-1.5">
+                        <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                        <span>{bhashiniError}</span>
+                      </div>
+                    )}
+
+                    {bhashiniTranslationMap[scheme.id] && (
+                      <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200 text-xs text-[#004D40]">
+                        <span className="font-bold block mb-1">BHASHINI Translation:</span>
+                        <p className="leading-relaxed">{bhashiniTranslationMap[scheme.id]}</p>
+                      </div>
+                    )}
 
                     {/* Word-Level Karaoke Text Highlight Container */}
                     <div className="bg-white p-4 sm:p-5 rounded-xl border border-[#004D40]/10 shadow-2xs">

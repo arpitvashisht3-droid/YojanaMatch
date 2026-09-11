@@ -77,9 +77,11 @@ export interface Scheme {
 
 export interface UserRecord {
   id?: string;
+  _id?: string;
   name: string;
   phone_number: string;
   created_at: string;
+  updated_at?: string;
   onboarding_completed: boolean;
   onboarding_step?: number;
   // Profile fields collected in onboarding

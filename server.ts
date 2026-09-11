@@ -4,11 +4,21 @@ import dotenv from "dotenv";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { GoogleGenAI, Type } from "@google/genai";
+import { 
+  connectDB, 
+  UserModel, 
+  SchemeModel, 
+  ScholarshipModel, 
+  MatchHistoryModel,
+  UserDocument,
+  EmbeddedUserProfile,
+  normalizePhoneNumber
+} from "yojanamatch-database";
 import schemesData from "./src/data/schemes.json" with { type: "json" };
 import scholarshipsData from "./src/data/scholarships.json" with { type: "json" };
 import { matchSchemes } from "./src/lib/matchingEngine";
 import { Scheme, UserProfile, UserRecord, SafeUser } from "./src/types";
-import { findUserByPhone, createUser, updateUser, normalizePhone, sanitizeUser } from "./src/server/db";
+import { formatUserForResponse, sanitizeUser, findUserByPhone, createUser, updateUser } from "./src/server/db";
 
 dotenv.config();
 
@@ -25,6 +35,7 @@ app.use(express.json({ limit: "10mb" }));
 // Extended Request interface for authenticated routes
 interface AuthenticatedRequest extends Request {
   user?: SafeUser;
+  rawUserDoc?: UserDocument;
 }
 
 // Authentication Middleware
@@ -48,16 +59,22 @@ async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextF
     }
 
     const phone = payload?.phone;
-    if (!phone) {
-      return res.status(401).json({ error: "Invalid token payload" });
+    const userId = payload?.userId;
+
+    let userDoc: UserDocument | null = null;
+    if (userId) {
+      userDoc = await UserModel.findById(userId);
+    }
+    if (!userDoc && phone) {
+      userDoc = await UserModel.findByPhone(phone);
     }
 
-    const user = await findUserByPhone(phone);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+    if (!userDoc) {
+      return res.status(404).json({ error: "Authenticated user not found" });
     }
 
-    req.user = sanitizeUser(user)!;
+    req.rawUserDoc = userDoc;
+    req.user = formatUserForResponse(userDoc)!;
     next();
   } catch (error: any) {
     console.error("Auth middleware error:", error);
@@ -65,9 +82,49 @@ async function requireAuth(req: AuthenticatedRequest, res: Response, next: NextF
   }
 }
 
+// Helper to optionally extract authenticated user from header if present
+async function getOptionalUser(req: Request): Promise<{ userDoc: UserDocument | null; safeUser: SafeUser | null }> {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return { userDoc: null, safeUser: null };
+    }
+    const token = authHeader.substring(7).trim();
+    if (!token) return { userDoc: null, safeUser: null };
+
+    const payload: any = jwt.verify(token, JWT_SECRET);
+    let userDoc: UserDocument | null = null;
+    if (payload?.userId) {
+      userDoc = await UserModel.findById(payload.userId);
+    }
+    if (!userDoc && payload?.phone) {
+      userDoc = await UserModel.findByPhone(payload.phone);
+    }
+    return {
+      userDoc,
+      safeUser: userDoc ? formatUserForResponse(userDoc) : null,
+    };
+  } catch {
+    return { userDoc: null, safeUser: null };
+  }
+}
+
 // Health check endpoint
-app.get("/api/health", (_req: Request, res: Response) => {
-  res.json({ status: "ok", schemes_count: schemesData.length });
+app.get("/api/health", async (_req: Request, res: Response) => {
+  try {
+    const schemes = await SchemeModel.getAllActiveSchemes();
+    res.json({ 
+      status: "ok", 
+      database: "connected",
+      schemes_count: schemes.length > 0 ? schemes.length : schemesData.length 
+    });
+  } catch (err) {
+    res.json({ 
+      status: "ok", 
+      database: "fallback",
+      schemes_count: schemesData.length 
+    });
+  }
 });
 
 // PART 1 — SIGNUP & LOGIN
@@ -76,7 +133,7 @@ app.post("/api/auth/signup", async (req: Request, res: Response) => {
   try {
     const { name, phone_number, password } = req.body;
     const cleanName = (name || "").trim();
-    const cleanPhone = normalizePhone(phone_number);
+    const cleanPhone = normalizePhoneNumber(phone_number);
 
     if (!cleanName || cleanName.length < 2) {
       return res.status(400).json({ error: "Valid name (at least 2 characters) is required" });
@@ -88,27 +145,24 @@ app.post("/api/auth/signup", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Password must be at least 6 characters long" });
     }
 
-    const existingUser = await findUserByPhone(cleanPhone);
+    const existingUser = await UserModel.findByPhone(cleanPhone);
     if (existingUser) {
       return res.status(409).json({ error: "A user with this mobile number is already registered" });
     }
 
     const password_hash = await bcrypt.hash(password, 10);
-    const now = new Date().toISOString();
 
-    const newUser = await createUser({
+    const newUserDoc = await UserModel.createUser({
       name: cleanName,
       phone_number: cleanPhone,
       password_hash,
-      created_at: now,
-      updated_at: now,
-      onboarding_completed: false,
-      onboarding_step: 1,
+      role: "user",
+      preferred_language: "en"
     });
 
-    const safeUser = sanitizeUser(newUser);
+    const safeUser = formatUserForResponse(newUserDoc);
     const token = jwt.sign(
-      { phone: cleanPhone, name: cleanName },
+      { userId: newUserDoc._id?.toString(), phone: cleanPhone, name: cleanName },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -120,7 +174,7 @@ app.post("/api/auth/signup", async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error("Signup error:", error);
-    return res.status(500).json({ error: "Signup failed. Please try again." });
+    return res.status(500).json({ error: error?.message || "Signup failed. Please try again." });
   }
 });
 
@@ -128,7 +182,7 @@ app.post("/api/auth/signup", async (req: Request, res: Response) => {
 app.post("/api/auth/login", async (req: Request, res: Response) => {
   try {
     const { phone_number, password } = req.body;
-    const cleanPhone = normalizePhone(phone_number);
+    const cleanPhone = normalizePhoneNumber(phone_number);
 
     if (!cleanPhone || cleanPhone.length !== 10) {
       return res.status(400).json({ error: "Please enter a valid 10-digit Indian mobile number" });
@@ -137,23 +191,23 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Password is required" });
     }
 
-    const user = await findUserByPhone(cleanPhone);
-    if (!user) {
+    const userDoc = await UserModel.findByPhone(cleanPhone);
+    if (!userDoc) {
       return res.status(401).json({ error: "Invalid phone number or password" });
     }
 
-    if (!user.password_hash) {
+    if (!userDoc.password_hash) {
       return res.status(401).json({ error: "Account has no password set. Please sign up." });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password_hash);
+    const isMatch = await bcrypt.compare(password, userDoc.password_hash);
     if (!isMatch) {
       return res.status(401).json({ error: "Invalid phone number or password" });
     }
 
-    const safeUser = sanitizeUser(user);
+    const safeUser = formatUserForResponse(userDoc);
     const token = jwt.sign(
-      { phone: cleanPhone, name: user.name },
+      { userId: userDoc._id?.toString(), phone: cleanPhone, name: userDoc.name },
       JWT_SECRET,
       { expiresIn: "7d" }
     );
@@ -193,52 +247,43 @@ app.get("/api/user/profile", requireAuth, async (req: AuthenticatedRequest, res:
 // 2. PATCH /api/user/profile (Protected)
 app.patch("/api/user/profile", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userPhone = req.user!.phone_number;
+    const userDoc = req.rawUserDoc!;
     const incoming = req.body || {};
 
-    // Whitelist only intended profile update fields
-    const allowedFields = [
-      "name",
-      "age",
-      "age_range",
-      "gender",
-      "caste_category",
-      "categories",
-      "state",
-      "district_type",
-      "business_situation",
-      "business_type",
-      "business_type_custom",
-      "business_age",
-      "income_range",
-      "estimated_income",
-      "is_differently_abled",
-      "education_level",
-      "current_marks_percentage",
-      "course_type",
-      "onboarding_completed",
-      "onboarding_step",
+    const profileUpdates: Partial<EmbeddedUserProfile> = {};
+    const profileKeys = [
+      "age", "gender", "caste_category", "state", "district_type",
+      "business_type", "estimated_income", "is_differently_abled",
+      "education_level", "current_marks_percentage", "course_type"
     ];
 
-    const safeUpdates: Partial<UserRecord> = {};
-    for (const key of allowedFields) {
+    for (const key of profileKeys) {
       if (key in incoming) {
-        (safeUpdates as any)[key] = incoming[key];
+        (profileUpdates as any)[key] = incoming[key];
       }
     }
 
-    if (Object.keys(safeUpdates).length === 0) {
-      return res.status(400).json({ error: "No valid profile fields provided for update" });
+    if (Object.keys(profileUpdates).length > 0 && userDoc._id) {
+      await UserModel.updateProfile(userDoc._id, profileUpdates);
     }
 
-    const updatedUser = await updateUser(userPhone, safeUpdates);
-    if (!updatedUser) {
-      return res.status(404).json({ error: "User not found" });
+    if (incoming.name || incoming.preferred_language) {
+      await UserModel.updateUser(userDoc._id!, {
+        name: incoming.name,
+        preferred_language: incoming.preferred_language
+      });
     }
 
+    if (typeof incoming.onboarding_completed === "boolean" || typeof incoming.onboarding_step === "number") {
+      const step = typeof incoming.onboarding_step === "number" ? incoming.onboarding_step : (userDoc.onboarding?.step || 1);
+      const completed = typeof incoming.onboarding_completed === "boolean" ? incoming.onboarding_completed : (userDoc.onboarding?.completed || false);
+      await UserModel.updateOnboarding(userDoc._id!, step, completed);
+    }
+
+    const updatedUserDoc = await UserModel.findById(userDoc._id!);
     return res.json({
       message: "Profile updated successfully",
-      user: sanitizeUser(updatedUser),
+      user: formatUserForResponse(updatedUserDoc),
     });
   } catch (error: any) {
     console.error("Update profile error:", error);
@@ -250,53 +295,37 @@ app.patch("/api/user/profile", requireAuth, async (req: AuthenticatedRequest, re
 // 1. PUT /api/user/onboarding (Protected)
 app.put("/api/user/onboarding", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userPhone = req.user!.phone_number;
+    const userDoc = req.rawUserDoc!;
     const data = req.body || {};
 
-    const allowedOnboardingFields = [
-      "age",
-      "age_range",
-      "gender",
-      "caste_category",
-      "categories",
-      "state",
-      "district_type",
-      "business_situation",
-      "business_type",
-      "business_type_custom",
-      "business_age",
-      "income_range",
-      "estimated_income",
-      "is_differently_abled",
-      "education_level",
-      "current_marks_percentage",
-      "course_type",
-      "onboarding_completed",
-      "onboarding_step",
+    const profileUpdates: Partial<EmbeddedUserProfile> = {};
+    const profileKeys = [
+      "age", "gender", "caste_category", "state", "district_type",
+      "business_type", "estimated_income", "is_differently_abled",
+      "education_level", "current_marks_percentage", "course_type"
     ];
 
-    const onboardingUpdates: Partial<UserRecord> = {};
-    for (const key of allowedOnboardingFields) {
-      if (key in data) {
-        (onboardingUpdates as any)[key] = data[key];
+    for (const key of profileKeys) {
+      if (key in data && data[key] !== undefined) {
+        (profileUpdates as any)[key] = data[key];
       }
     }
 
-    if (typeof data.onboarding_completed === "boolean") {
-      onboardingUpdates.onboarding_completed = data.onboarding_completed;
-    }
-    if (typeof data.onboarding_step === "number") {
-      onboardingUpdates.onboarding_step = data.onboarding_step;
+    if (Object.keys(profileUpdates).length > 0 && userDoc._id) {
+      await UserModel.updateProfile(userDoc._id, profileUpdates);
     }
 
-    const updatedUser = await updateUser(userPhone, onboardingUpdates);
-    if (!updatedUser) {
-      return res.status(404).json({ error: "User not found" });
+    const step = typeof data.onboarding_step === "number" ? data.onboarding_step : (userDoc.onboarding?.step || 1);
+    const completed = typeof data.onboarding_completed === "boolean" ? data.onboarding_completed : true;
+    
+    if (userDoc._id) {
+      await UserModel.updateOnboarding(userDoc._id, step, completed);
     }
 
+    const updatedUserDoc = await UserModel.findById(userDoc._id!);
     return res.json({
       message: "Onboarding data saved successfully",
-      user: sanitizeUser(updatedUser),
+      user: formatUserForResponse(updatedUserDoc),
     });
   } catch (error: any) {
     console.error("Save onboarding error:", error);
@@ -307,54 +336,14 @@ app.put("/api/user/onboarding", requireAuth, async (req: AuthenticatedRequest, r
 // 2. GET /api/user/onboarding (Protected)
 app.get("/api/user/onboarding", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const userPhone = req.user!.phone_number;
-    const user = await findUserByPhone(userPhone);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
-
-    const hasOnboardingData =
-      user.age !== undefined ||
-      user.age_range !== undefined ||
-      user.gender !== undefined ||
-      user.caste_category !== undefined ||
-      (user.categories && user.categories.length > 0) ||
-      user.state !== undefined ||
-      user.district_type !== undefined ||
-      user.business_type !== undefined ||
-      user.estimated_income !== undefined ||
-      user.income_range !== undefined ||
-      user.is_differently_abled !== undefined ||
-      user.education_level !== undefined;
-
-    if (!hasOnboardingData && !user.onboarding_completed && (user.onboarding_step || 1) <= 1) {
-      return res.status(404).json({ error: "Onboarding data not found" });
-    }
-
-    const onboardingData = {
-      age: user.age,
-      age_range: user.age_range,
-      gender: user.gender,
-      caste_category: user.caste_category,
-      categories: user.categories,
-      state: user.state,
-      district_type: user.district_type,
-      business_situation: user.business_situation,
-      business_type: user.business_type,
-      business_type_custom: user.business_type_custom,
-      business_age: user.business_age,
-      income_range: user.income_range,
-      estimated_income: user.estimated_income,
-      is_differently_abled: user.is_differently_abled,
-      education_level: user.education_level,
-      current_marks_percentage: user.current_marks_percentage,
-      course_type: user.course_type,
-    };
+    const userDoc = req.rawUserDoc!;
+    const profile = userDoc.profile || {};
+    const onboarding = userDoc.onboarding || { completed: false, step: 1 };
 
     return res.json({
-      onboarding_completed: user.onboarding_completed,
-      onboarding_step: user.onboarding_step || 1,
-      data: onboardingData,
+      onboarding_completed: onboarding.completed,
+      onboarding_step: onboarding.step || 1,
+      data: profile,
     });
   } catch (error: any) {
     console.error("Get onboarding error:", error);
@@ -362,69 +351,183 @@ app.get("/api/user/onboarding", requireAuth, async (req: AuthenticatedRequest, r
   }
 });
 
-// Backward compatibility: Legacy Auth 1 (Signup or Login trust-based)
-app.post("/api/auth/signup-or-login", async (req: Request, res: Response) => {
+// PART 4 — SCHEMES & SCHOLARSHIPS API
+// 1. GET /api/schemes
+app.get("/api/schemes", async (_req: Request, res: Response) => {
   try {
-    const { name, phone_number } = req.body;
-    const cleanName = (name || "").trim();
-    const cleanPhone = normalizePhone(phone_number);
-
-    if (!cleanName) {
-      return res.status(400).json({ error: "Name is required" });
+    const mongoSchemes = await SchemeModel.getAllActiveSchemes();
+    if (mongoSchemes && mongoSchemes.length > 0) {
+      const formatted = mongoSchemes.map((s) => ({
+        id: s.scheme_id || s._id?.toString(),
+        ...s
+      }));
+      return res.json(formatted);
     }
-    if (!cleanPhone || cleanPhone.length !== 10) {
-      return res.status(400).json({ error: "Please enter a valid 10-digit Indian mobile number" });
-    }
-
-    let user = await findUserByPhone(cleanPhone);
-    let isNewUser = false;
-    if (user) {
-      if (cleanName && cleanName !== user.name) {
-        const updated = await updateUser(cleanPhone, { name: cleanName });
-        if (updated) user = updated;
-      }
-    } else {
-      isNewUser = true;
-      user = await createUser({
-        name: cleanName,
-        phone_number: cleanPhone,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        onboarding_completed: false,
-        onboarding_step: 1,
-      });
-    }
-
-    const safeUser = sanitizeUser(user);
-    const token = jwt.sign(
-      { phone: cleanPhone, name: user.name },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    return res.json({ user: safeUser, token, isNewUser });
+    return res.json(schemesData);
   } catch (error: any) {
-    console.error("Signup/Login error:", error);
-    return res.status(500).json({ error: "Authentication failed. Please try again." });
+    console.warn("Failed to fetch schemes from MongoDB, using fallback data:", error?.message || error);
+    return res.json(schemesData);
   }
 });
 
-// Backward compatibility: Legacy Auth 3 (Update User Profile)
-app.post("/api/auth/update-profile", async (req: Request, res: Response) => {
+// 2. GET /api/schemes/:id
+app.get("/api/schemes/:id", async (req: Request, res: Response) => {
   try {
-    const { phone_number, updates } = req.body;
-    if (!phone_number) {
-      return res.status(400).json({ error: "Phone number is required" });
+    const schemeId = req.params.id;
+    let scheme = await SchemeModel.findBySchemeId(schemeId);
+    if (!scheme) {
+      scheme = await SchemeModel.findById(schemeId).catch(() => null);
     }
-    const cleanPhone = normalizePhone(phone_number);
-    const updatedUser = await updateUser(cleanPhone, updates || {});
-    if (!updatedUser) {
-      return res.status(404).json({ error: "User not found to update" });
+    if (scheme) {
+      return res.json({
+        id: scheme.scheme_id || scheme._id?.toString(),
+        ...scheme
+      });
     }
-    return res.json({ user: sanitizeUser(updatedUser) });
+
+    const fallback = (schemesData as Scheme[]).find((s) => s.id === schemeId);
+    if (fallback) return res.json(fallback);
+
+    return res.status(404).json({ error: "Scheme not found" });
   } catch (error: any) {
-    console.error("Update profile error:", error);
-    return res.status(500).json({ error: "Failed to update profile" });
+    console.error("Get scheme by ID error:", error);
+    return res.status(500).json({ error: "Failed to fetch scheme details" });
+  }
+});
+
+// 3. GET /api/scholarships
+app.get("/api/scholarships", async (_req: Request, res: Response) => {
+  try {
+    const mongoScholarships = await ScholarshipModel.getAllActiveScholarships();
+    if (mongoScholarships && mongoScholarships.length > 0) {
+      const formatted = mongoScholarships.map((s) => ({
+        id: s.scholarship_id || s._id?.toString(),
+        ...s
+      }));
+      return res.json(formatted);
+    }
+    return res.json(scholarshipsData);
+  } catch (error: any) {
+    console.warn("Failed to fetch scholarships from MongoDB, using fallback data:", error?.message || error);
+    return res.json(scholarshipsData);
+  }
+});
+
+// 4. GET /api/scholarships/:id
+app.get("/api/scholarships/:id", async (req: Request, res: Response) => {
+  try {
+    const schId = req.params.id;
+    let scholarship = await ScholarshipModel.findByScholarshipId(schId);
+    if (!scholarship) {
+      scholarship = await ScholarshipModel.findById(schId).catch(() => null);
+    }
+    if (scholarship) {
+      return res.json({
+        id: scholarship.scholarship_id || scholarship._id?.toString(),
+        ...scholarship
+      });
+    }
+
+    const fallback = (scholarshipsData as Scheme[]).find((s) => s.id === schId);
+    if (fallback) return res.json(fallback);
+
+    return res.status(404).json({ error: "Scholarship not found" });
+  } catch (error: any) {
+    console.error("Get scholarship by ID error:", error);
+    return res.status(500).json({ error: "Failed to fetch scholarship details" });
+  }
+});
+
+// PART 5 — MATCHING ENGINE & MATCH HISTORY
+// 1. POST /api/match-schemes
+app.post("/api/match-schemes", async (req: Request, res: Response) => {
+  try {
+    const { profile, category_type = "scheme", input_mode = "text", raw_input_text = "", language = "en" } = req.body;
+    const userProfile: UserProfile = profile || {};
+    const isScholarship = category_type === "scholarship";
+
+    let dataset: Scheme[] = [];
+
+    if (isScholarship) {
+      const mongoDocs = await ScholarshipModel.getAllActiveScholarships().catch(() => []);
+      if (mongoDocs.length > 0) {
+        dataset = mongoDocs.map((s) => ({
+          id: s.scholarship_id || s._id?.toString() || "",
+          ...s
+        })) as unknown as Scheme[];
+      } else {
+        dataset = scholarshipsData as unknown as Scheme[];
+      }
+    } else {
+      const mongoDocs = await SchemeModel.getAllActiveSchemes().catch(() => []);
+      if (mongoDocs.length > 0) {
+        dataset = mongoDocs.map((s) => ({
+          id: s.scheme_id || s._id?.toString() || "",
+          ...s
+        })) as unknown as Scheme[];
+      } else {
+        dataset = schemesData as unknown as Scheme[];
+      }
+    }
+
+    const matchedResults = matchSchemes(userProfile, dataset, category_type);
+
+    // Save match run into match_histories if user is logged in
+    const { userDoc } = await getOptionalUser(req);
+    if (userDoc && userDoc._id) {
+      try {
+        const formattedResults = matchedResults.map((r) => ({
+          scheme_id: r.scheme.id,
+          scheme_name: r.scheme.name,
+          hindi_scheme_name: r.scheme.hindi_name,
+          benefit_headline: r.scheme.benefit_headline,
+          match_score: r.match_score,
+          matched_criteria_count: r.matched_criteria_count,
+          total_criteria_checked: r.total_criteria_checked,
+          match_details: r.match_details,
+          ai_explanation: r.ai_explanation
+        }));
+
+        await MatchHistoryModel.createMatchHistory({
+          user_id: userDoc._id,
+          category_type: isScholarship ? "scholarship" : "scheme",
+          input_mode: input_mode as "voice" | "text" | "onboarding",
+          raw_input_text: raw_input_text,
+          extracted_profile_snapshot: userProfile as EmbeddedUserProfile,
+          results: formattedResults,
+          language: language as "en" | "hi"
+        });
+      } catch (histErr) {
+        console.warn("Failed to save match history entry:", histErr);
+      }
+    }
+
+    return res.json({
+      total_matches: matchedResults.length,
+      results: matchedResults,
+    });
+  } catch (error: any) {
+    console.error("Matching error:", error);
+    return res.status(500).json({ error: "Failed to match schemes" });
+  }
+});
+
+// 2. GET /api/user/match-history (Protected)
+app.get("/api/user/match-history", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userDoc = req.rawUserDoc!;
+    if (!userDoc._id) {
+      return res.status(400).json({ error: "Valid user ID required" });
+    }
+
+    const history = await MatchHistoryModel.getHistoryByUserId(userDoc._id, 20);
+    return res.json({
+      count: history.length,
+      history: history
+    });
+  } catch (error: any) {
+    console.error("Get user match history error:", error);
+    return res.status(500).json({ error: "Failed to retrieve user match history" });
   }
 });
 
@@ -448,7 +551,6 @@ function getGenAI(): GoogleGenAI | null {
 
 // Resilient helper to handle temporary 503/429 high demand spikes on flash models
 async function generateWithModelFallback(ai: any, params: any) {
-
   try {
     return await ai.models.generateContent({
       model: "gemini-3.8-flash",
@@ -489,7 +591,6 @@ app.post("/api/extract-profile", async (req: Request, res: Response) => {
 
     const ai = getGenAI();
     if (!ai) {
-      // Fallback rule-based heuristic extraction if API key is not present
       const heuristicProfile = extractHeuristicProfile(text, mode);
       const merged = { ...(knownProfile || {}), ...heuristicProfile };
       return res.json({ profile: merged, extracted_by: "heuristic" });
@@ -497,7 +598,6 @@ app.post("/api/extract-profile", async (req: Request, res: Response) => {
 
     const isScholarship = mode === "scholarships";
 
-    // Contextual instruction acknowledging already known profile data from onboarding
     const knownContext = knownProfile
       ? `NOTE: The user's confirmed onboarding profile already has:
 Age: ${knownProfile.age || "unspecified"}
@@ -522,8 +622,8 @@ Extract the following structured attributes into JSON without inferring false po
 - district_type: "rural" | "urban" | "semi-urban" | "any" | null
 - estimated_income: integer (estimated annual family income in INR) or null
 - is_differently_abled: boolean or null
-- education_level: "school" | "undergraduate" | "postgraduate" | "diploma" | "any" | null (e.g. 10th/12th/school -> school, BA/BSc/BTech/college/degree -> undergraduate, MA/MSc/MTech/MBA -> postgraduate, polytechnic/diploma/ITI -> diploma)
-- course_type: "general" | "technical" | "medical" | "vocational" | "any" | null (e.g. engineering/BTech -> technical, MBBS/pharma/nursing -> medical, arts/science/commerce -> general)
+- education_level: "school" | "undergraduate" | "postgraduate" | "diploma" | "any" | null
+- course_type: "general" | "technical" | "medical" | "vocational" | "any" | null
 - current_marks_percentage: integer (percentage marks in previous exam e.g. 85) or null
 
 Return ONLY accurate JSON matching the schema. Do not make up information that was not mentioned in the text.`
@@ -535,7 +635,7 @@ Extract the following structured attributes into JSON without inferring false po
 - gender: "female" | "male" | "transgender" | "any" | null
 - caste_category: "sc" | "st" | "obc" | "general" | "minority" | "ews" | "any" | null
 - state: Indian state name or null (e.g. "Uttar Pradesh", "Bihar", "Maharashtra")
-- district_type: "rural" | "urban" | "semi-urban" | "any" | null (e.g., "village/gaon/dehat" -> "rural", "city/shahar/town" -> "urban")
+- district_type: "rural" | "urban" | "semi-urban" | "any" | null
 - business_type: "manufacturing" | "services" | "retail_shop" | "artisan_handicraft" | "agriculture_allied" | "street_vendor" | "textile_weaving" | "food_processing" | "dairy_livestock" | "fisheries" | "tech_startup" | "any" | null
 - estimated_income: integer (estimated annual income in INR) or null
 - is_differently_abled: boolean or null
@@ -576,12 +676,10 @@ Return ONLY accurate JSON matching the schema. Do not make up information that w
     const responseText = response.text?.trim() || "{}";
     const extracted = JSON.parse(responseText);
 
-    // Merge known profile with newly extracted values
     const mergedProfile: UserProfile = {
       ...(knownProfile || {}),
     };
 
-    // Only overwrite known fields if extracted has a non-null explicit value
     for (const key of Object.keys(extracted) as (keyof UserProfile)[]) {
       if (extracted[key] !== null && extracted[key] !== undefined) {
         (mergedProfile as any)[key] = extracted[key];
@@ -591,7 +689,6 @@ Return ONLY accurate JSON matching the schema. Do not make up information that w
     return res.json({ profile: mergedProfile, extracted_by: "gemini" });
   } catch (error: any) {
     console.error("Profile extraction error:", error);
-    // Graceful degradation: return heuristic profile merged with knownProfile
     const heuristicProfile = extractHeuristicProfile(req.body.text || "", req.body.mode || "schemes");
     const merged = { ...(req.body.knownProfile || {}), ...heuristicProfile };
     return res.json({ profile: merged, extracted_by: "fallback_heuristic" });
@@ -649,44 +746,22 @@ Explain why they qualify and how this scheme helps them in under 60 words in ${t
   }
 });
 
-// 3. Deterministic Matching Endpoint (Pure rule-based matching against static schemes.json or scholarships.json)
-app.post("/api/match-schemes", (req: Request, res: Response) => {
-  try {
-    const { profile, category_type = "scheme" } = req.body;
-    const userProfile: UserProfile = profile || {};
-    const isScholarship = category_type === "scholarship";
-    const dataset: Scheme[] = (isScholarship ? scholarshipsData : schemesData) as Scheme[];
-
-    const matchedResults = matchSchemes(userProfile, dataset, category_type);
-    return res.json({
-      total_matches: matchedResults.length,
-      results: matchedResults,
-    });
-  } catch (error: any) {
-    console.error("Matching error:", error);
-    return res.status(500).json({ error: "Failed to match schemes" });
-  }
-});
-
-// Heuristic fallback extractor in case of offline/timeout
+// Heuristic fallback extractor
 function extractHeuristicProfile(text: string, mode: string = "schemes"): UserProfile {
   const lower = text.toLowerCase();
   const profile: UserProfile = {};
 
-  // Age match (e.g., "25 years", "age 30", "28 yo", "22 saal")
   const ageMatch = lower.match(/(?:age\s*|i am\s*|meri umar\s*)?(\b\d{2}\b)(?:\s*(?:years|yr|saal|sal|वर्ष))?/i);
   if (ageMatch && parseInt(ageMatch[1], 10) >= 12 && parseInt(ageMatch[1], 10) <= 80) {
     profile.age = parseInt(ageMatch[1], 10);
   }
 
-  // Gender
   if (lower.includes("female") || lower.includes("woman") || lower.includes("mahila") || lower.includes("aurat") || lower.includes("girl") || lower.includes("lady") || lower.includes("stree") || lower.includes("beti")) {
     profile.gender = "female";
   } else if (lower.includes("male") || lower.includes("man") || lower.includes("purush") || lower.includes("ladka") || lower.includes("boy") || lower.includes("aadmi")) {
     profile.gender = "male";
   }
 
-  // Caste / Category
   if (lower.includes("sc") || lower.includes("scheduled caste") || lower.includes("dalit") || lower.includes("anusuchit jaati")) {
     profile.caste_category = "sc";
   } else if (lower.includes("st") || lower.includes("scheduled tribe") || lower.includes("adivasi") || lower.includes("anusuchit janjati")) {
@@ -699,28 +774,13 @@ function extractHeuristicProfile(text: string, mode: string = "schemes"): UserPr
     profile.caste_category = "general";
   }
 
-  // State detection
   const stateKeywords: Record<string, string> = {
-    "uttar pradesh": "Uttar Pradesh",
-    "up": "Uttar Pradesh",
-    "bihar": "Bihar",
-    "rajasthan": "Rajasthan",
-    "madhya pradesh": "Madhya Pradesh",
-    "mp": "Madhya Pradesh",
-    "maharashtra": "Maharashtra",
-    "odisha": "Odisha",
-    "orissa": "Odisha",
-    "west bengal": "West Bengal",
-    "bengal": "West Bengal",
-    "delhi": "Delhi",
-    "tamil nadu": "Tamil Nadu",
-    "karnataka": "Karnataka",
-    "punjab": "Punjab",
-    "haryana": "Haryana",
-    "kerala": "Kerala",
-    "jharkhand": "Jharkhand",
-    "assam": "Assam",
-    "gujarat": "Gujarat",
+    "uttar pradesh": "Uttar Pradesh", "up": "Uttar Pradesh", "bihar": "Bihar",
+    "rajasthan": "Rajasthan", "madhya pradesh": "Madhya Pradesh", "mp": "Madhya Pradesh",
+    "maharashtra": "Maharashtra", "odisha": "Odisha", "orissa": "Odisha",
+    "west bengal": "West Bengal", "delhi": "Delhi", "tamil nadu": "Tamil Nadu",
+    "karnataka": "Karnataka", "punjab": "Punjab", "haryana": "Haryana",
+    "kerala": "Kerala", "jharkhand": "Jharkhand", "assam": "Assam", "gujarat": "Gujarat"
   };
   for (const [kw, st] of Object.entries(stateKeywords)) {
     if (new RegExp(`\\b${kw}\\b`, "i").test(lower)) {
@@ -729,7 +789,6 @@ function extractHeuristicProfile(text: string, mode: string = "schemes"): UserPr
     }
   }
 
-  // District / Location type
   if (lower.includes("rural") || lower.includes("village") || lower.includes("gaon") || lower.includes("dehat") || lower.includes("gramin")) {
     profile.district_type = "rural";
   } else if (lower.includes("urban") || lower.includes("city") || lower.includes("shahar") || lower.includes("metro") || lower.includes("nagar")) {
@@ -738,36 +797,31 @@ function extractHeuristicProfile(text: string, mode: string = "schemes"): UserPr
     profile.district_type = "semi-urban";
   }
 
-  // Disability / Divyangjan
   if (lower.includes("disabilit") || lower.includes("divyang") || lower.includes("handicap") || lower.includes("pwd")) {
     profile.is_differently_abled = true;
   }
 
-  // Mode-specific heuristics
   if (mode === "scholarships") {
-    // Education Level
-    if (lower.includes("12th") || lower.includes("10th") || lower.includes("8th") || lower.includes("9th") || lower.includes("11th") || lower.includes("school") || lower.includes("matric")) {
+    if (lower.includes("12th") || lower.includes("10th") || lower.includes("school") || lower.includes("matric")) {
       profile.education_level = "school";
-    } else if (lower.includes("undergraduate") || lower.includes("college") || lower.includes("btech") || lower.includes("b.tech") || lower.includes("be") || lower.includes("bsc") || lower.includes("ba") || lower.includes("bcom") || lower.includes("degree") || lower.includes("graduation")) {
+    } else if (lower.includes("undergraduate") || lower.includes("college") || lower.includes("btech") || lower.includes("degree")) {
       profile.education_level = "undergraduate";
-    } else if (lower.includes("postgraduate") || lower.includes("masters") || lower.includes("mtech") || lower.includes("msc") || lower.includes("ma") || lower.includes("mba") || lower.includes("pg")) {
+    } else if (lower.includes("postgraduate") || lower.includes("masters") || lower.includes("pg")) {
       profile.education_level = "postgraduate";
     } else if (lower.includes("diploma") || lower.includes("polytechnic") || lower.includes("iti")) {
       profile.education_level = "diploma";
     }
 
-    // Course Stream
-    if (lower.includes("engineer") || lower.includes("tech") || lower.includes("computer") || lower.includes("btech")) {
+    if (lower.includes("engineer") || lower.includes("tech") || lower.includes("btech")) {
       profile.course_type = "technical";
-    } else if (lower.includes("medical") || lower.includes("mbbs") || lower.includes("nursing") || lower.includes("pharma")) {
+    } else if (lower.includes("medical") || lower.includes("mbbs") || lower.includes("nursing")) {
       profile.course_type = "medical";
-    } else if (lower.includes("iti") || lower.includes("vocational") || lower.includes("skill")) {
+    } else if (lower.includes("iti") || lower.includes("vocational")) {
       profile.course_type = "vocational";
     } else if (lower.includes("arts") || lower.includes("science") || lower.includes("commerce")) {
       profile.course_type = "general";
     }
 
-    // Marks percentage (e.g. "85%", "75 percent", "80% marks")
     const marksMatch = lower.match(/(\b\d{2}\b)\s*(?:%|percent|pratishat)/i);
     if (marksMatch) {
       const val = parseInt(marksMatch[1], 10);
@@ -776,26 +830,25 @@ function extractHeuristicProfile(text: string, mode: string = "schemes"): UserPr
       }
     }
   } else {
-    // Business Type
-    if (lower.includes("tailor") || lower.includes("darzi") || lower.includes("artisan") || lower.includes("carpenter") || lower.includes("potter") || lower.includes("handicraft") || lower.includes("karigar") || lower.includes("silai")) {
+    if (lower.includes("tailor") || lower.includes("artisan") || lower.includes("handicraft") || lower.includes("carpenter")) {
       profile.business_type = "artisan_handicraft";
-    } else if (lower.includes("street vendor") || lower.includes("vendor") || lower.includes("thela") || lower.includes("rehari") || lower.includes("rehri") || lower.includes("pheriwala") || lower.includes("cart")) {
+    } else if (lower.includes("street vendor") || lower.includes("vendor") || lower.includes("thela") || lower.includes("rehri")) {
       profile.business_type = "street_vendor";
-    } else if (lower.includes("shop") || lower.includes("dukan") || lower.includes("kirana") || lower.includes("grocery") || lower.includes("store") || lower.includes("retail")) {
+    } else if (lower.includes("shop") || lower.includes("dukan") || lower.includes("retail")) {
       profile.business_type = "retail_shop";
-    } else if (lower.includes("weaving") || lower.includes("bunker") || lower.includes("bunkar") || lower.includes("textile") || lower.includes("kapda") || lower.includes("silk") || lower.includes("handloom")) {
+    } else if (lower.includes("weaving") || lower.includes("textile") || lower.includes("bunker")) {
       profile.business_type = "textile_weaving";
-    } else if (lower.includes("dairy") || lower.includes("cow") || lower.includes("buffalo") || lower.includes("goat") || lower.includes("pashupalan") || lower.includes("milk") || lower.includes("doodh") || lower.includes("poultry")) {
+    } else if (lower.includes("dairy") || lower.includes("livestock") || lower.includes("pashupalan")) {
       profile.business_type = "dairy_livestock";
-    } else if (lower.includes("fish") || lower.includes("machhli") || lower.includes("machli") || lower.includes("aquaculture") || lower.includes("matsya")) {
+    } else if (lower.includes("fish") || lower.includes("machhli") || lower.includes("aquaculture")) {
       profile.business_type = "fisheries";
-    } else if (lower.includes("food") || lower.includes("bakery") || lower.includes("pickle") || lower.includes("achar") || lower.includes("snack") || lower.includes("processing")) {
+    } else if (lower.includes("food") || lower.includes("processing") || lower.includes("bakery")) {
       profile.business_type = "food_processing";
-    } else if (lower.includes("startup") || lower.includes("tech") || lower.includes("software") || lower.includes("it")) {
+    } else if (lower.includes("startup") || lower.includes("tech")) {
       profile.business_type = "tech_startup";
-    } else if (lower.includes("factory") || lower.includes("manufacturing") || lower.includes("unit") || lower.includes("production")) {
+    } else if (lower.includes("factory") || lower.includes("manufacturing")) {
       profile.business_type = "manufacturing";
-    } else if (lower.includes("service") || lower.includes("repair") || lower.includes("saloon") || lower.includes("beauty")) {
+    } else if (lower.includes("service") || lower.includes("repair")) {
       profile.business_type = "services";
     }
   }
@@ -803,8 +856,17 @@ function extractHeuristicProfile(text: string, mode: string = "schemes"): UserPr
   return profile;
 }
 
-// Start Server with Vite Middleware
+// Start Server & Connect to MongoDB Atlas
 async function startServer() {
+  try {
+    console.log("Connecting to MongoDB Atlas...");
+    const db = await connectDB();
+    console.log(`Connected to MongoDB Atlas database: '${db.databaseName}'`);
+  } catch (err: any) {
+    console.warn("MongoDB connection warning:", err?.message || err);
+    console.warn("Server will continue running with fallback dataset handling.");
+  }
+
   if (process.env.NODE_ENV !== "production") {
     const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({

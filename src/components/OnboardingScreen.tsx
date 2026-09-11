@@ -21,6 +21,7 @@ import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 import { INDIAN_STATES_AND_UTS, userRecordToProfile } from '../lib/userProfileHelper';
 import { startSpeechRecognition, isSpeechRecognitionSupported, speakText, stopSpeaking } from '../lib/speechService';
+import { KaraokeExplanation } from './KaraokeExplanation';
 import { matchSchemes } from '../lib/matchingEngine';
 import schemesData from '../data/schemes.json';
 import { CasteCategory, DistrictType, BusinessType, Gender, UserRecord, MatchedSchemeResult } from '../types';
@@ -51,6 +52,8 @@ export const OnboardingScreen: React.FC = () => {
 
   // Step read-aloud (TTS) state
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
+  const [highlightMode, setHighlightMode] = useState<'word' | 'paragraph'>('word');
 
   // GPS state
   const [isLocating, setIsLocating] = useState(false);
@@ -252,13 +255,13 @@ export const OnboardingScreen: React.FC = () => {
   // Compose the current step's heading + message for read-aloud playback
   const getCurrentStepSpeechText = (): string => {
     switch (step) {
-      case 1: return `${t.step1_heading}. ${t.step1_message}`;
-      case 2: return `${t.step2_heading}. ${t.step2_message}`;
-      case 3: return `${t.step3_heading}. ${t.step3_message}`;
-      case 4: return `${t.step4_heading}. ${t.step4_message}`;
-      case 5: return `${t.step5_heading}. ${t.step5_message}`;
-      case 6: return `${t.step6_heading}. ${t.step6_message}`;
-      case 7: return `${t.step7_heading}. ${t.step7_message}`;
+      case 1: return t.step1_message;
+      case 2: return t.step2_message;
+      case 3: return t.step3_message;
+      case 4: return t.step4_message;
+      case 5: return t.step5_message;
+      case 6: return t.step6_message;
+      case 7: return t.step7_message;
       default: return '';
     }
   };
@@ -268,21 +271,40 @@ export const OnboardingScreen: React.FC = () => {
     if (isSpeaking) {
       stopSpeaking();
       setIsSpeaking(false);
+      setActiveWordIndex(null);
+      setHighlightMode('word');
       return;
     }
     const textToSpeak = getCurrentStepSpeechText();
     if (!textToSpeak.trim()) return;
     setIsSpeaking(true);
+    setHighlightMode('word');
     speakText({
       text: textToSpeak,
       language,
-      onEnd: () => setIsSpeaking(false),
-      onError: () => setIsSpeaking(false),
+      onEnd: () => {
+        setIsSpeaking(false);
+        setActiveWordIndex(null);
+      },
+      onError: () => {
+        setIsSpeaking(false);
+        setActiveWordIndex(null);
+      },
+      onWord: (info) => {
+        setActiveWordIndex(info.wordIndex >= 0 ? info.wordIndex : null);
+      },
+      onDegradeToParagraph: () => {
+        setHighlightMode('paragraph');
+      },
     });
   };
 
   // Stop any ongoing read-aloud playback when the step changes or component unmounts
   useEffect(() => {
+    stopSpeaking();
+    setIsSpeaking(false);
+    setActiveWordIndex(null);
+    setHighlightMode('word');
     return () => {
       stopSpeaking();
     };
@@ -290,40 +312,14 @@ export const OnboardingScreen: React.FC = () => {
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
-      {/* Mobile-Only Header (< 900px) */}
-      <div className="block min-[900px]:hidden mb-4">
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-[#004D40]/10 p-0.5 shadow-2xs shrink-0">
-              <img
-                src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
-                alt="YojanaMatch logo"
-                className="w-full h-full object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <span className="text-base font-extrabold text-[#004D40]">YojanaMatch</span>
-          </div>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#004D40]/10 text-[#004D40]">
-            {t.onboarding_progress.replace('{current}', String(step)).replace('{total}', '7')}
-          </span>
-        </div>
-        <div className="w-full h-1.5 bg-[#004D40]/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#FF6B35] transition-all duration-300 rounded-full"
-            style={{ width: `${(step / 7) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Two-Column 30/70 Responsive Grid */}
-      <div className="grid grid-cols-1 min-[900px]:grid-cols-[30%_1fr] gap-6 sm:gap-8 items-start">
-        {/* Left Column (30% width on Desktop/Tablet >= 900px, Sticky) */}
-        <aside className="hidden min-[900px]:block w-full sticky top-20 self-start">
+      {/* Two-Column 30/70 Sidebar Layout (always visible, no mobile collapse) */}
+      <div className="grid grid-cols-[30%_1fr] gap-6 sm:gap-8 items-start">
+        {/* Left Column (always visible, sticky) */}
+        <aside className="block w-full sticky top-20 self-start">
           <div className="bg-white rounded-2xl border border-[#004D40]/15 shadow-xs p-5 sm:p-6 space-y-5">
             {/* Brand Logo & Wordmark */}
             <div className="flex items-center gap-3 pb-4 border-b border-[#004D40]/10">
-              <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-0.5 shadow-2xs shrink-0">
+              <div className="w-20 h-20 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-1.5 shadow-2xs shrink-0">
                 <img
                   src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
                   alt="YojanaMatch logo"
@@ -419,7 +415,7 @@ export const OnboardingScreen: React.FC = () => {
             {/* ================= STEP 1: WELCOME ================= */}
             {step === 1 && (
               <div className="text-center py-4 sm:py-6">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-1 shadow-xs mx-auto mb-5">
+                <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-1.5 shadow-xs mx-auto mb-5">
                   <img
                     src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
                     alt="YojanaMatch logo"
@@ -430,9 +426,14 @@ export const OnboardingScreen: React.FC = () => {
                 <h2 className="text-2xl sm:text-3xl font-bold text-[#004D40] tracking-tight">
                   {t.step1_heading}
                 </h2>
-                <p className="mt-3 text-base text-[#004D40]/75 max-w-xl mx-auto leading-relaxed">
-                  {t.step1_message}
-                </p>
+                <KaraokeExplanation
+                  text={t.step1_message}
+                  isPlaying={isSpeaking}
+                  activeWordIndex={activeWordIndex}
+                  highlightMode={highlightMode}
+                  language={language}
+                  className="mt-3 text-base max-w-xl mx-auto leading-relaxed text-center"
+                />
 
                 <div className="mt-8 pt-4 flex justify-center">
                   <button
@@ -452,9 +453,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step2_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6">
-              {t.step2_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step2_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="space-y-6">
               {/* Optional Name Confirmation */}
@@ -572,9 +578,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step3_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6">
-              {t.step3_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step3_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
@@ -653,9 +664,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step4_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6">
-              {t.step4_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step4_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="space-y-6">
               {/* GPS Geolocation Button */}
@@ -771,9 +787,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step5_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6">
-              {t.step5_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step5_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="space-y-6">
               {/* Existing vs New Business Tappable Options */}
@@ -922,9 +943,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step6_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6 leading-relaxed">
-              {t.step6_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step6_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="space-y-3">
               {[
@@ -1005,9 +1031,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step7_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6 leading-relaxed">
-              {t.step7_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step7_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             {/* Summary Card with per-field Edit links */}
             <div className="bg-[#004D40]/5 border border-[#004D40]/15 rounded-xl p-4 sm:p-5 mb-8">

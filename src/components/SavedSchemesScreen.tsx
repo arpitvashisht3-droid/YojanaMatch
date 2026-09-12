@@ -99,7 +99,7 @@ export const SavedSchemesScreen: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  
+                  <a
                     href={scheme.official_link}
                     target="_blank"
                     rel="noopener noreferrer"

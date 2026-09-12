@@ -12,6 +12,7 @@ import {
   Building2,
   Coins,
   AlertCircle,
+  Bookmark,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
@@ -23,6 +24,7 @@ import { MatchedSchemeResult } from '../types';
 export const ResultsScreen: React.FC = () => {
   const {
     language,
+    contentMode,
     matchedResults,
     expandedCardIds,
     toggleCard,
@@ -30,6 +32,8 @@ export const ResultsScreen: React.FC = () => {
     resetAll,
     audioPlayingSchemeId,
     setAudioPlaying,
+    toggleBookmark,
+    isBookmarked,
   } = useAppStore();
   const t = translations[language];
 
@@ -189,6 +193,8 @@ export const ResultsScreen: React.FC = () => {
             const isExpanded = expandedCardIds.includes(scheme.id);
             const isPlayingAudio = audioPlayingSchemeId === scheme.id;
             const isTtsHidden = ttsErrorIds.includes(scheme.id);
+            const categoryType: 'scheme' | 'scholarship' = contentMode === 'scholarships' ? 'scholarship' : 'scheme';
+            const isSaved = isBookmarked(scheme.id, categoryType);
 
             // Cap displayed percentage at 90%
             const cappedScore = Math.min(90, match_score);
@@ -276,8 +282,24 @@ export const ResultsScreen: React.FC = () => {
                     </div>
                   </button>
 
-                  {/* Sibling Action Buttons Column (Audio & Chevron - strictly siblings, never nested) */}
+                  {/* Sibling Action Buttons Column (Bookmark, Audio & Chevron - strictly siblings, never nested) */}
                   <div className="flex flex-col items-center gap-3 shrink-0 pt-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleBookmark(scheme.id, categoryType);
+                      }}
+                      className={`touch-target p-2.5 rounded-full transition-all cursor-pointer ${
+                        isSaved
+                          ? 'bg-[#004D40] text-white shadow-sm'
+                          : 'bg-[#004D40]/5 hover:bg-[#004D40]/10 text-[#004D40]/60'
+                      }`}
+                      aria-label={isSaved ? 'Remove from saved' : 'Save this scheme'}
+                      title={isSaved ? (language === 'hi' ? 'सहेजा गया' : 'Saved') : (language === 'hi' ? 'सहेजें' : 'Save')}
+                    >
+                      <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />
+                    </button>
                     {!isTtsHidden && (
                       <button
                         type="button"

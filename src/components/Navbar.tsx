@@ -1,10 +1,10 @@
 import React from 'react';
-import { ShieldCheck, Info, Home, User, LogOut } from 'lucide-react';
+import { ShieldCheck, Info, Home, User, LogOut, Bookmark } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 
 export const Navbar: React.FC = () => {
-  const { language, setLanguage, contentMode, setContentMode, currentScreen, navigateTo, user, logout } = useAppStore();
+  const { language, setLanguage, contentMode, setContentMode, currentScreen, navigateTo, user, logout, bookmarkedSchemeIds } = useAppStore();
   const t = translations[language];
 
   const handleBrandClick = () => {
@@ -95,6 +95,26 @@ export const Navbar: React.FC = () => {
                 >
                   <Home className="w-4 h-4" />
                   <span className="hidden md:inline">{t.nav_home}</span>
+                </button>
+              )}
+
+              {user.onboarding_completed && (
+                <button
+                  onClick={() => navigateTo('saved')}
+                  className={`touch-target relative flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
+                    currentScreen === 'saved'
+                      ? 'bg-[#004D40]/10 text-[#004D40]'
+                      : 'text-[#004D40]/80 hover:text-[#004D40] hover:bg-[#004D40]/5'
+                  }`}
+                  title={language === 'hi' ? 'सहेजी गई योजनाएं' : 'Saved Schemes'}
+                >
+                  <Bookmark className="w-4 h-4 text-[#FF6B35]" />
+                  <span className="hidden md:inline">{language === 'hi' ? 'सहेजी गई' : 'Saved'}</span>
+                  {bookmarkedSchemeIds.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FF6B35] text-white text-[9px] font-bold flex items-center justify-center">
+                      {bookmarkedSchemeIds.length > 9 ? '9+' : bookmarkedSchemeIds.length}
+                    </span>
+                  )}
                 </button>
               )}
 

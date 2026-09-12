@@ -134,4 +134,4 @@ export interface FollowUpQuestion {
 }
 
 export type AppLanguage = 'en' | 'hi';
-export type AppScreen = 'signup' | 'onboarding' | 'landing' | 'followup' | 'results' | 'about' | 'profile';
+export type AppScreen = 'signup' | 'onboarding' | 'landing' | 'followup' | 'results' | 'about' | 'profile' | 'saved';

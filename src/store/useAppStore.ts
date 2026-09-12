@@ -6,6 +6,17 @@ import { matchSchemes } from '../lib/matchingEngine';
 import { userRecordToProfile } from '../lib/userProfileHelper';
 
 const SESSION_STORAGE_KEY = 'ym_session_phone';
+const BOOKMARKS_STORAGE_KEY = 'ym_saved_bookmarks';
+
+function loadStoredBookmarks(): string[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = localStorage.getItem(BOOKMARKS_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 interface AppState {
   language: AppLanguage;
@@ -26,6 +37,7 @@ interface AppState {
   queryCache: Record<string, { profile: UserProfile; results: MatchedSchemeResult[] }>;
   error: string | null;
   recommendationsLayout: '3column' | 'stacked';
+  bookmarkedSchemeIds: string[];
 
   // Actions
   setLanguage: (lang: AppLanguage) => void;
@@ -33,6 +45,8 @@ interface AppState {
   setInputText: (text: string) => void;
   setIsListening: (val: boolean) => void;
   setRecommendationsLayout: (layout: '3column' | 'stacked') => void;
+  toggleBookmark: (schemeId: string, categoryType: 'scheme' | 'scholarship') => void;
+  isBookmarked: (schemeId: string, categoryType: 'scheme' | 'scholarship') => boolean;
   navigateTo: (screen: AppScreen) => void;
   toggleCard: (schemeId: string) => void;
   setAudioPlaying: (schemeId: string | null) => void;
@@ -70,6 +84,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   queryCache: {},
   error: null,
   recommendationsLayout: '3column',
+  bookmarkedSchemeIds: loadStoredBookmarks(),
 
   setLanguage: (lang) => set({ language: lang }),
   setContentMode: (mode) => {
@@ -87,6 +102,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   setInputText: (text) => set({ inputText: text, error: null }),
   setIsListening: (val) => set({ isListening: val }),
   setRecommendationsLayout: (layout) => set({ recommendationsLayout: layout }),
+  toggleBookmark: (schemeId, categoryType) => {
+    const key = `${categoryType}:${schemeId}`;
+    const { bookmarkedSchemeIds } = get();
+    const updated = bookmarkedSchemeIds.includes(key)
+      ? bookmarkedSchemeIds.filter((k) => k !== key)
+      : [...bookmarkedSchemeIds, key];
+    set({ bookmarkedSchemeIds: updated });
+    try {
+      localStorage.setItem(BOOKMARKS_STORAGE_KEY, JSON.stringify(updated));
+    } catch {
+      // Ignored - localStorage unavailable
+    }
+  },
+  isBookmarked: (schemeId, categoryType) => {
+    const key = `${categoryType}:${schemeId}`;
+    return get().bookmarkedSchemeIds.includes(key);
+  },
   navigateTo: (screen) => set({ currentScreen: screen }),
 
   initAuthSession: async () => {

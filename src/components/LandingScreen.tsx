@@ -266,8 +266,6 @@ export const LandingScreen: React.FC = () => {
   if (recommendationsLayout === '3column') {
     return (
       <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-5">
-        {renderLayoutSwitcher()}
-
         {/* 3-Column CSS Grid on >=900px, 1-Column on <900px */}
         <div className="grid grid-cols-1 min-[900px]:grid-cols-[280px_minmax(0,1fr)_320px] gap-6 items-start">
           {/* LEFT SIDEBAR COLUMN: "New this month" auto-fits content */}
@@ -338,8 +336,6 @@ export const LandingScreen: React.FC = () => {
   // =========================================================================
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8 sm:py-12">
-      {renderLayoutSwitcher()}
-
       {/* Hero Header */}
       <div className="text-center mb-8 sm:mb-10">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#004D40]/5 border border-[#004D40]/10 text-[#004D40] text-xs font-bold uppercase tracking-wider mb-4">

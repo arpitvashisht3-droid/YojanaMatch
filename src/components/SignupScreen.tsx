@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Lock, CheckCircle, AlertCircle, Phone, User, Sparkles, FileText, Shield } from 'lucide-react';
+import { ArrowRight, Lock, CheckCircle, AlertCircle, Phone, Mail, User, Sparkles, FileText, Shield } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 
@@ -7,8 +7,10 @@ export const SignupScreen: React.FC = () => {
   const { language, loginOrSignup, isLoading } = useAppStore();
   const t = translations[language];
 
+  const [authMethod, setAuthMethod] = useState<'mobile' | 'email'>('mobile');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,24 +23,37 @@ export const SignupScreen: React.FC = () => {
       return;
     }
 
-    // Normalize phone digits
-    const digits = phone.replace(/\D/g, '');
-    let cleanPhone = digits;
-    if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
-      cleanPhone = cleanPhone.slice(2);
-    } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
-      cleanPhone = cleanPhone.slice(1);
-    } else if (cleanPhone.length > 10) {
-      cleanPhone = cleanPhone.slice(-10);
-    }
+    let identifier = '';
 
-    if (cleanPhone.length !== 10) {
-      setValidationError(t.signup_error_phone);
-      return;
+    if (authMethod === 'mobile') {
+      // Normalize phone digits
+      const digits = phone.replace(/\D/g, '');
+      let cleanPhone = digits;
+      if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
+        cleanPhone = cleanPhone.slice(2);
+      } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
+        cleanPhone = cleanPhone.slice(1);
+      } else if (cleanPhone.length > 10) {
+        cleanPhone = cleanPhone.slice(-10);
+      }
+
+      if (cleanPhone.length !== 10) {
+        setValidationError(t.signup_error_phone);
+        return;
+      }
+      identifier = cleanPhone;
+    } else {
+      const cleanEmail = email.trim().toLowerCase();
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(cleanEmail)) {
+        setValidationError(language === 'hi' ? 'कृपया एक मान्य ईमेल पता दर्ज करें' : 'Please enter a valid email address');
+        return;
+      }
+      identifier = cleanEmail;
     }
 
     try {
-      await loginOrSignup(cleanName, cleanPhone);
+      await loginOrSignup(cleanName, identifier);
     } catch (err: any) {
       setValidationError(err.message || 'Error continuing. Please check your connection.');
     }
@@ -195,27 +210,75 @@ export const SignupScreen: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
-                {t.signup_phone_label} <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <div className="absolute inset-y-0 left-9 flex items-center pointer-events-none text-xs font-bold text-[#004D40]/60 pr-1">
-                  +91
-                </div>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder={t.signup_phone_placeholder}
-                  maxLength={14}
-                  className="w-full pl-18 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors tracking-wide"
-                  autoComplete="tel"
-                  required
-                />
+              {/* Auth Method Tab Toggle */}
+              <div className="flex bg-[#004D40]/5 rounded-xl p-1 border border-[#004D40]/10 mb-3">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMethod('mobile'); setValidationError(null); }}
+                  className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    authMethod === 'mobile' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
+                  }`}
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? 'मोबाइल नंबर' : 'Mobile Number'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMethod('email'); setValidationError(null); }}
+                  className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    authMethod === 'email' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? 'ईमेल' : 'Email'}</span>
+                </button>
               </div>
+
+              {authMethod === 'mobile' ? (
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
+                    {t.signup_phone_label} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <div className="absolute inset-y-0 left-9 flex items-center pointer-events-none text-xs font-bold text-[#004D40]/60 pr-1">
+                      +91
+                    </div>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder={t.signup_phone_placeholder}
+                      maxLength={14}
+                      className="w-full pl-18 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors tracking-wide"
+                      autoComplete="tel"
+                      required
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
+                    {language === 'hi' ? 'ईमेल पता' : 'Email Address'} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={language === 'hi' ? 'aapka.email@example.com' : 'your.email@example.com'}
+                      className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors"
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Continue Action Button */}

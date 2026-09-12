@@ -22,9 +22,9 @@ export default function App() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAFAF7] text-[#004D40]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-1 shadow-xs">
+          <div className="w-24 h-24 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-1.5 shadow-xs">
             <img
-              src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+              src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
               alt="YojanaMatch logo"
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"

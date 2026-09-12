@@ -319,9 +319,9 @@ export const OnboardingScreen: React.FC = () => {
           <div className="bg-white rounded-2xl border border-[#004D40]/15 shadow-xs p-5 sm:p-6 space-y-5">
             {/* Brand Logo & Wordmark */}
             <div className="flex items-center gap-3 pb-4 border-b border-[#004D40]/10">
-              <div className="w-20 h-20 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-1.5 shadow-2xs shrink-0">
+              <div className="w-28 h-28 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-2 shadow-2xs shrink-0">
                 <img
-                  src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+                  src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
                   alt="YojanaMatch logo"
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
@@ -415,9 +415,9 @@ export const OnboardingScreen: React.FC = () => {
             {/* ================= STEP 1: WELCOME ================= */}
             {step === 1 && (
               <div className="text-center py-4 sm:py-6">
-                <div className="w-24 h-24 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-1.5 shadow-xs mx-auto mb-5">
+                <div className="w-32 h-32 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-2 shadow-xs mx-auto mb-5">
                   <img
-                    src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+                    src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
                     alt="YojanaMatch logo"
                     className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"

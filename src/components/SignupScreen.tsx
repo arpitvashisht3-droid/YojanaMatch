@@ -49,9 +49,9 @@ export const SignupScreen: React.FC = () => {
       {/* Mobile-Only Header (< 900px) */}
       <div className="block min-[900px]:hidden mb-5 text-center">
         <div className="inline-flex items-center justify-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-0.5 shadow-2xs">
+          <div className="w-20 h-20 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-1 shadow-2xs">
             <img
-              src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+              src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
               alt="YojanaMatch logo"
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
@@ -76,9 +76,9 @@ export const SignupScreen: React.FC = () => {
         <div className="hidden min-[900px]:flex flex-col justify-between bg-white border border-[#004D40]/15 rounded-2xl shadow-xs p-6 sm:p-7 space-y-6">
           <div>
             {/* Logo Image */}
-            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-1 shadow-xs mb-4">
+            <div className="w-28 h-28 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-1.5 shadow-xs mb-4">
               <img
-                src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+                src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
                 alt="YojanaMatch logo"
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"

@@ -26,9 +26,9 @@ export const Navbar: React.FC = () => {
           className="flex items-center gap-2.5 sm:gap-3 text-left group focus:outline-none cursor-pointer"
           aria-label="Go to YojanaMatch home"
         >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex items-center justify-center bg-white border border-[#004D40]/10 shadow-xs group-hover:scale-105 transition-transform p-0.5 shrink-0">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden flex items-center justify-center bg-white border border-[#004D40]/10 shadow-xs group-hover:scale-105 transition-transform p-1 shrink-0">
             <img
-              src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+              src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
               alt="YojanaMatch logo"
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"

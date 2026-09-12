@@ -9,6 +9,37 @@ const SESSION_STORAGE_KEY = 'ym_session_phone';
 const EMAIL_SESSION_STORAGE_KEY = 'ym_session_email';
 const BOOKMARKS_STORAGE_KEY = 'ym_saved_bookmarks';
 
+function getStoredSession(key: string): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem(key) ?? sessionStorage.getItem(key);
+}
+
+function setStoredSession(key: string, value: string, remember: boolean) {
+  if (typeof window === 'undefined') return;
+  if (remember) {
+    localStorage.setItem(key, value);
+    sessionStorage.removeItem(key);
+  } else {
+    sessionStorage.setItem(key, value);
+    localStorage.removeItem(key);
+  }
+}
+
+function updateStoredSession(key: string, value: string) {
+  if (typeof window === 'undefined') return;
+  if (localStorage.getItem(key) !== null) {
+    localStorage.setItem(key, value);
+  } else {
+    sessionStorage.setItem(key, value);
+  }
+}
+
+function clearStoredSession(key: string) {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(key);
+  sessionStorage.removeItem(key);
+}
+
 function loadStoredBookmarks(): string[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -61,7 +92,7 @@ interface AppState {
 
   // Auth & Onboarding Actions
   initAuthSession: () => Promise<void>;
-  loginOrSignup: (name: string, identifier: string, authMethod?: 'mobile' | 'email') => Promise<{ isNewUser: boolean; user: UserRecord }>;
+  loginOrSignup: (name: string, identifier: string, authMethod?: 'mobile' | 'email', rememberMe?: boolean) => Promise<{ isNewUser: boolean; user: UserRecord }>;
   updateUserProfile: (updates: Partial<UserRecord>) => Promise<UserRecord | null>;
   logout: () => void;
 }
@@ -124,7 +155,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   initAuthSession: async () => {
     try {
-      const storedEmailUser = localStorage.getItem(EMAIL_SESSION_STORAGE_KEY);
+      const storedEmailUser = getStoredSession(EMAIL_SESSION_STORAGE_KEY);
       if (storedEmailUser) {
         try {
           const user: UserRecord = JSON.parse(storedEmailUser);
@@ -132,11 +163,11 @@ export const useAppStore = create<AppState>((set, get) => ({
           set({ user, currentScreen: nextScreen, isAuthChecking: false });
           return;
         } catch {
-          localStorage.removeItem(EMAIL_SESSION_STORAGE_KEY);
+          clearStoredSession(EMAIL_SESSION_STORAGE_KEY);
         }
       }
 
-      const storedPhone = localStorage.getItem(SESSION_STORAGE_KEY);
+      const storedPhone = getStoredSession(SESSION_STORAGE_KEY);
       if (!storedPhone) {
         set({ user: null, currentScreen: 'signup', isAuthChecking: false });
         return;
@@ -157,7 +188,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       }
       // If user not found on backend
-      localStorage.removeItem(SESSION_STORAGE_KEY);
+      clearStoredSession(SESSION_STORAGE_KEY);
       set({ user: null, currentScreen: 'signup', isAuthChecking: false });
     } catch (err) {
       console.warn('Auth session check error:', err);
@@ -165,13 +196,63 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  loginOrSignup: async (name: string, phone: string) => {
+  loginOrSignup: async (name: string, identifier: string, authMethod: 'mobile' | 'email' = 'mobile', rememberMe: boolean = true) => {
     set({ isLoading: true, error: null });
+
+    if (authMethod === 'email') {
+      try {
+        const cleanName = name.trim();
+        const existingRaw = getStoredSession(EMAIL_SESSION_STORAGE_KEY);
+        let user: UserRecord;
+        let isNewUser = true;
+
+        const makeFreshUser = (): UserRecord => ({
+          name: cleanName,
+          phone_number: '',
+          email: identifier,
+          created_at: new Date().toISOString(),
+          onboarding_completed: false,
+          onboarding_step: 1,
+        });
+
+        if (existingRaw) {
+          try {
+            const existing: UserRecord = JSON.parse(existingRaw);
+            if (existing.email === identifier) {
+              user = { ...existing, name: cleanName || existing.name };
+              isNewUser = false;
+            } else {
+              user = makeFreshUser();
+            }
+          } catch {
+            user = makeFreshUser();
+          }
+        } else {
+          user = makeFreshUser();
+        }
+
+        setStoredSession(EMAIL_SESSION_STORAGE_KEY, JSON.stringify(user), rememberMe);
+
+        const nextScreen: AppScreen = user.onboarding_completed ? 'landing' : 'onboarding';
+        set({
+          user,
+          currentScreen: nextScreen,
+          isLoading: false,
+          error: null,
+        });
+
+        return { isNewUser, user };
+      } catch (err: any) {
+        set({ isLoading: false, error: err.message || 'Login failed' });
+        throw err;
+      }
+    }
+
     try {
       const res = await fetch('/api/auth/signup-or-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, phone_number: phone }),
+        body: JSON.stringify({ name, phone_number: identifier }),
       });
 
       if (!res.ok) {
@@ -181,7 +262,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       const data = await res.json();
       const user: UserRecord = data.user;
-      localStorage.setItem(SESSION_STORAGE_KEY, user.phone_number);
+      setStoredSession(SESSION_STORAGE_KEY, user.phone_number, rememberMe);
 
       const nextScreen: AppScreen = user.onboarding_completed ? 'landing' : 'onboarding';
       set({
@@ -201,6 +282,17 @@ export const useAppStore = create<AppState>((set, get) => ({
   updateUserProfile: async (updates: Partial<UserRecord>) => {
     const { user } = get();
     if (!user) return null;
+
+    if (user.email && !user.phone_number) {
+      const localUpdated: UserRecord = { ...user, ...updates };
+      set({ user: localUpdated });
+      try {
+        updateStoredSession(EMAIL_SESSION_STORAGE_KEY, JSON.stringify(localUpdated));
+      } catch {
+        // Ignored - localStorage unavailable
+      }
+      return localUpdated;
+    }
 
     try {
       const res = await fetch('/api/auth/update-profile', {
@@ -232,7 +324,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem(SESSION_STORAGE_KEY);
+    clearStoredSession(SESSION_STORAGE_KEY);
+    clearStoredSession(EMAIL_SESSION_STORAGE_KEY);
     set({
       user: null,
       currentScreen: 'signup',

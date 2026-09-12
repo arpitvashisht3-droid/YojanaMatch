@@ -7,6 +7,8 @@ export const SignupScreen: React.FC = () => {
   const { language, loginOrSignup, isLoading } = useAppStore();
   const t = translations[language];
 
+  const [mode, setMode] = useState<'signup' | 'login'>('signup');
+  const [rememberMe, setRememberMe] = useState(true);
   const [authMethod, setAuthMethod] = useState<'mobile' | 'email'>('mobile');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
@@ -53,7 +55,7 @@ export const SignupScreen: React.FC = () => {
     }
 
     try {
-      await loginOrSignup(cleanName, identifier, authMethod);
+      await loginOrSignup(cleanName, identifier, authMethod, rememberMe);
     } catch (err: any) {
       setValidationError(err.message || 'Error continuing. Please check your connection.');
     }
@@ -188,6 +190,27 @@ export const SignupScreen: React.FC = () => {
           )}
 
           {/* Form */}
+          <div className="flex bg-[#004D40]/5 rounded-xl p-1 border border-[#004D40]/10 mb-5">
+            <button
+              type="button"
+              onClick={() => setMode('signup')}
+              className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold cursor-pointer transition-all ${
+                mode === 'signup' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
+              }`}
+            >
+              {language === 'hi' ? 'नया खाता बनाएं' : 'Create Account'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold cursor-pointer transition-all ${
+                mode === 'login' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
+              }`}
+            >
+              {language === 'hi' ? 'लॉग इन करें' : 'Log In'}
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
@@ -280,6 +303,19 @@ export const SignupScreen: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Remember Me Checkbox */}
+            <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-[#004D40]/30 text-[#FF6B35] focus:ring-[#FF6B35]/30 cursor-pointer"
+              />
+              <span className="text-xs sm:text-sm text-[#004D40]/80 font-medium">
+                {language === 'hi' ? 'मुझे याद रखें' : 'Remember me'}
+              </span>
+            </label>
 
             {/* Continue Action Button */}
             <button

@@ -1,7 +1,13 @@
 import process from "node:process";
 
-const PIPELINE_SEARCH_URL = "https://meity-auth.bhashini.gov.in/ulca/apis/v0/model/getInferencePipeline";
-const DEFAULT_PIPELINE_ID = "64392f08a7b312788e67041a";
+// Official MeitY BHASHINI Udyat & Dhruva Endpoints
+const PIPELINE_CONFIG_URL =
+  process.env.BHASHINI_CONFIG_URL ||
+  "https://meity-auth.ulcacontrib.org/ulca/apis/v0/model/getModelsPipeline";
+const DEFAULT_INFERENCE_URL =
+  process.env.BHASHINI_INFERENCE_URL ||
+  "https://dhruva-api.bhashini.gov.in/services/inference/pipeline";
+const DEFAULT_PIPELINE_ID = "64392f96daac500b55c543cd";
 
 export interface BhashiniTranslationResult {
   translated_text: string | null;
@@ -11,27 +17,65 @@ export interface BhashiniTranslationResult {
   error: string | null;
 }
 
-/**
- * Returns true if both BHASHINI_USER_ID and BHASHINI_API_KEY environment variables are present.
- */
-export function isBhashiniConfigured(): boolean {
-  const userId = (process.env.BHASHINI_USER_ID || "").trim();
-  const apiKey = (process.env.BHASHINI_API_KEY || "").trim();
-  return Boolean(userId && apiKey);
+export interface BhashiniCredentials {
+  udyatKey: string;
+  inferenceKey: string;
+  pipelineId: string;
+  inferenceUrl: string;
+  userId?: string;
+  // Legacy aliases for backward compatibility
+  apiKey?: string;
 }
 
 /**
  * Retrieve BHASHINI credentials safely from environment variables.
+ * Adapts to BHASHINI Udyat API format:
+ * - UDYAT KEY (BHASHINI_UDYAT_KEY): Used for pipeline config & ULCA model discovery
+ * - INFERENCE KEY (BHASHINI_INFERENCE_KEY): Used for Dhruva inference requests
+ * Supports BHASHINI_API_KEY as fallback for backwards compatibility.
  */
-export function getBhashiniCredentials(): { userId: string; apiKey: string; pipelineId: string } {
+export function getBhashiniCredentials(): BhashiniCredentials {
+  const udyatKey = (
+    process.env.BHASHINI_UDYAT_KEY ||
+    process.env.BHASHINI_API_KEY ||
+    ""
+  ).trim();
+
+  const inferenceKey = (
+    process.env.BHASHINI_INFERENCE_KEY ||
+    process.env.BHASHINI_API_KEY ||
+    ""
+  ).trim();
+
   const userId = (process.env.BHASHINI_USER_ID || "").trim();
-  const apiKey = (process.env.BHASHINI_API_KEY || "").trim();
-  const pipelineId = (process.env.BHASHINI_PIPELINE_ID || "").trim() || DEFAULT_PIPELINE_ID;
-  return { userId, apiKey, pipelineId };
+  const pipelineId =
+    (process.env.BHASHINI_PIPELINE_ID || "").trim() || DEFAULT_PIPELINE_ID;
+  const inferenceUrl =
+    (process.env.BHASHINI_INFERENCE_URL || "").trim() || DEFAULT_INFERENCE_URL;
+
+  return {
+    udyatKey,
+    inferenceKey,
+    pipelineId,
+    inferenceUrl,
+    userId: userId || undefined,
+    apiKey: udyatKey,
+  };
 }
 
 /**
- * Performs translation using official BHASHINI ULCA Pipeline API (MeitY AI for Bharat).
+ * Returns true if both UDYAT KEY and INFERENCE KEY (or backward-compatible equivalents) are configured.
+ */
+export function isBhashiniConfigured(): boolean {
+  const { udyatKey, inferenceKey } = getBhashiniCredentials();
+  return Boolean(udyatKey && inferenceKey);
+}
+
+/**
+ * Performs translation using official BHASHINI Udyat & Dhruva Pipeline API (MeitY AI for Bharat).
+ * Flow:
+ * 1. Queries the pipeline config using the UDYAT KEY (via ulcaApiKey header) to resolve active translation serviceId & endpoint.
+ * 2. Executes the translation inference against Dhruva using the INFERENCE KEY (via Authorization header).
  */
 export async function translateText(
   text: string,
@@ -44,14 +88,20 @@ export async function translateText(
       source_language: sourceLang,
       target_language: targetLang,
       status: "error",
-      error: "BHASHINI API credentials not configured. Please set BHASHINI_USER_ID and BHASHINI_API_KEY in environment.",
+      error:
+        "BHASHINI API credentials not configured. Please set BHASHINI_UDYAT_KEY and BHASHINI_INFERENCE_KEY in environment.",
     };
   }
 
-  const { userId, apiKey, pipelineId } = getBhashiniCredentials();
+  const { udyatKey, inferenceKey, pipelineId, inferenceUrl, userId } =
+    getBhashiniCredentials();
 
   try {
-    // Step 1: Query Pipeline Config
+    // Step 1: Query Pipeline Config using the UDYAT KEY
+    let serviceId: string | null = null;
+    let callbackUrl = inferenceUrl;
+    let authHeaderName = "Authorization";
+
     const pipelinePayload = {
       pipelineTasks: [
         {
@@ -69,70 +119,88 @@ export async function translateText(
       },
     };
 
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const configHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+      ulcaApiKey: udyatKey,
+    };
+    if (userId) {
+      configHeaders["userID"] = userId;
+    }
 
-    const pipelineRes = await fetch(PIPELINE_SEARCH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        userID: userId,
-        ulcaApiKey: apiKey,
+    const configController = new AbortController();
+    const configTimeoutId = setTimeout(() => configController.abort(), 10000);
+
+    try {
+      const configRes = await fetch(PIPELINE_CONFIG_URL, {
+        method: "POST",
+        headers: configHeaders,
+        body: JSON.stringify(pipelinePayload),
+        signal: configController.signal,
+      });
+
+      clearTimeout(configTimeoutId);
+
+      if (configRes.ok) {
+        const pipelineData: any = await configRes.json();
+
+        // Extract endpoint & auth details if returned
+        const endpointInfo =
+          pipelineData?.pipelineInferenceAPIEndPoint || {};
+        if (endpointInfo.callbackUrl) {
+          callbackUrl = endpointInfo.callbackUrl;
+        }
+        if (endpointInfo.inferenceApiKey?.name) {
+          authHeaderName = endpointInfo.inferenceApiKey.name;
+        }
+
+        // Extract serviceId for translation task
+        const tasksConfig = pipelineData?.pipelineResponseConfig || [];
+        for (const task of tasksConfig) {
+          if (task?.taskType === "translation" && Array.isArray(task.config)) {
+            const matchedConfig = task.config.find(
+              (c: any) =>
+                c?.language?.sourceLanguage === sourceLang &&
+                c?.language?.targetLanguage === targetLang
+            );
+            serviceId = matchedConfig?.serviceId || task.config[0]?.serviceId || null;
+            if (serviceId) break;
+          }
+        }
+      } else {
+        const errorText = await configRes.text().catch(() => "");
+        console.warn(
+          `[BHASHINI] Pipeline Config warning (${configRes.status}): ${errorText}. Falling back to direct inference endpoint.`
+        );
+      }
+    } catch (configErr: any) {
+      clearTimeout(configTimeoutId);
+      if (configErr?.name === "AbortError") {
+        console.warn(
+          "[BHASHINI] Pipeline Config request timed out. Proceeding to inference endpoint."
+        );
+      } else {
+        console.warn(
+          `[BHASHINI] Pipeline Config request failed: ${configErr?.message || configErr}. Proceeding to inference endpoint.`
+        );
+      }
+    }
+
+    // Step 2: Compute Translation Inference Call using INFERENCE KEY
+    const inferenceTaskConfig: Record<string, any> = {
+      language: {
+        sourceLanguage: sourceLang,
+        targetLanguage: targetLang,
       },
-      body: JSON.stringify(pipelinePayload),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!pipelineRes.ok) {
-      const errorText = await pipelineRes.text().catch(() => "");
-      return {
-        translated_text: null,
-        source_language: sourceLang,
-        target_language: targetLang,
-        status: "error",
-        error: `BHASHINI Pipeline Search HTTP ${pipelineRes.status}: ${errorText}`.trim(),
-      };
+    };
+    if (serviceId) {
+      inferenceTaskConfig["serviceId"] = serviceId;
     }
 
-    const pipelineData: any = await pipelineRes.json();
-
-    // Step 2: Parse callbackUrl, auth header info, and serviceId
-    const endpointInfo = pipelineData?.pipelineInferenceAPIEndPoint || {};
-    const callbackUrl = endpointInfo.callbackUrl;
-    const authKeyInfo = endpointInfo.inferenceApiKey || {};
-    const headerName = authKeyInfo.name || "Authorization";
-    const headerValue = authKeyInfo.value;
-
-    const tasksConfig = pipelineData?.pipelineResponseConfig || [];
-    let serviceId: string | null = null;
-    if (tasksConfig.length > 0 && tasksConfig[0]?.config?.length > 0) {
-      serviceId = tasksConfig[0].config[0].serviceId;
-    }
-
-    if (!callbackUrl || !headerValue) {
-      return {
-        translated_text: null,
-        source_language: sourceLang,
-        target_language: targetLang,
-        status: "error",
-        error: "BHASHINI pipeline configuration response missing callback URL or inference API key.",
-      };
-    }
-
-    // Step 3: Compute Inference Call
     const inferencePayload = {
       pipelineTasks: [
         {
           taskType: "translation",
-          config: {
-            language: {
-              sourceLanguage: sourceLang,
-              targetLanguage: targetLang,
-            },
-            serviceId: serviceId,
-          },
+          config: inferenceTaskConfig,
         },
       ],
       inputData: {
@@ -145,13 +213,13 @@ export async function translateText(
     };
 
     const infController = new AbortController();
-    const infTimeoutId = setTimeout(() => infController.abort(), 10000);
+    const infTimeoutId = setTimeout(() => infController.abort(), 15000);
 
     const inferenceRes = await fetch(callbackUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        [headerName]: headerValue,
+        [authHeaderName]: inferenceKey,
       },
       body: JSON.stringify(inferencePayload),
       signal: infController.signal,
@@ -172,9 +240,13 @@ export async function translateText(
 
     const inferenceData: any = await inferenceRes.json();
     const pipelineResp = inferenceData?.pipelineResponse || [];
-    if (pipelineResp.length > 0) {
-      const outputList = pipelineResp[0]?.output || [];
-      if (outputList.length > 0 && outputList[0]?.target) {
+
+    if (Array.isArray(pipelineResp) && pipelineResp.length > 0) {
+      const transTask =
+        pipelineResp.find((item: any) => item?.taskType === "translation") ||
+        pipelineResp[0];
+      const outputList = transTask?.output || [];
+      if (Array.isArray(outputList) && outputList.length > 0 && outputList[0]?.target) {
         return {
           translated_text: outputList[0].target,
           source_language: sourceLang,
@@ -199,7 +271,9 @@ export async function translateText(
       source_language: sourceLang,
       target_language: targetLang,
       status: "error",
-      error: isAbort ? "BHASHINI API request timed out (10s limit)" : `BHASHINI Request Error: ${err?.message || err}`,
+      error: isAbort
+        ? "BHASHINI API request timed out"
+        : `BHASHINI Request Error: ${err?.message || err}`,
     };
   }
 }

@@ -610,7 +610,7 @@ app.post("/api/bhashini/translate", async (req: Request, res: Response) => {
       source_language: source_language || "en",
       target_language: target_language || "hi",
       status: "error",
-      error: "BHASHINI API credentials not configured. Please set BHASHINI_USER_ID and BHASHINI_API_KEY in environment.",
+      error: "BHASHINI API credentials not configured. Please set BHASHINI_UDYAT_KEY and BHASHINI_INFERENCE_KEY in environment.",
     });
   }
 

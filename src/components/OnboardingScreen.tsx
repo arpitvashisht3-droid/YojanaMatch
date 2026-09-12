@@ -229,12 +229,31 @@ export const OnboardingScreen: React.FC = () => {
     income_range: incomeRange,
   }), [name, user, ageRange, gender, categories, stateName, districtType, bizSituation, bizType, customBizType, bizAge, incomeRange]);
 
-  // Calculate instant matched schemes on Step 7
+  // Live matching, recomputed whenever any onboarding field changes, so the sidebar
+  // can show a running "X of Y schemes match so far" count across every step.
+  const liveMatches: MatchedSchemeResult[] = useMemo(() => {
+    const profile = userRecordToProfile(currentTempUserRecord);
+    return matchSchemes(profile, schemesData as any);
+  }, [currentTempUserRecord]);
+
+  const totalSchemesCount = (schemesData as any[]).length;
+
+  // Calculate instant matched schemes preview on Step 7 (top 3, reusing liveMatches)
   const instantMatches: MatchedSchemeResult[] = useMemo(() => {
     if (step !== 7) return [];
-    const profile = userRecordToProfile(currentTempUserRecord);
-    return matchSchemes(profile, schemesData as any).slice(0, 3);
-  }, [step, currentTempUserRecord]);
+    return liveMatches.slice(0, 3);
+  }, [step, liveMatches]);
+
+  // Confidence meter: how many key profile signals are filled in so far (out of 5)
+  const filledSignalsCount = useMemo(() => {
+    let count = 0;
+    if (ageRange) count++;
+    if (gender) count++;
+    if (categories.length > 0) count++;
+    if (stateName) count++;
+    if (bizType || incomeRange) count++;
+    return count;
+  }, [ageRange, gender, categories, stateName, bizType, incomeRange]);
 
   // Finish Onboarding & Go to Home
   const handleCompleteOnboarding = async () => {
@@ -386,6 +405,34 @@ export const OnboardingScreen: React.FC = () => {
                 })}
               </div>
             </div>
+
+            {/* Live Match Preview */}
+            {step >= 2 && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{language === 'hi' ? 'लाइव मिलान' : 'Live Match Preview'}</span>
+                </div>
+                <p className="text-[11px] text-[#004D40]/70 mb-2">
+                  {language === 'hi'
+                    ? `${totalSchemesCount} में से ${liveMatches.length} योजनाएं अभी मेल खाती हैं`
+                    : `${liveMatches.length} of ${totalSchemesCount} schemes match so far`}
+                </p>
+                <div className="flex items-center gap-1">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <span
+                      key={i}
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
+                        i < filledSignalsCount ? 'bg-[#FF6B35]' : 'bg-[#004D40]/10'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="text-[10px] text-[#004D40]/50 mt-1">
+                  {language === 'hi' ? 'मिलान विश्वास स्तर' : 'Match confidence'}
+                </p>
+              </div>
+            )}
 
             {/* Bottom hint */}
             <div className="pt-3 border-t border-[#004D40]/10 text-[11px] text-[#004D40]/60 flex items-center gap-1.5">

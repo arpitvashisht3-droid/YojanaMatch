@@ -15,7 +15,20 @@ import {
   ShieldCheck,
   Edit2,
   Volume2,
-  VolumeX
+  VolumeX,
+  Trophy,
+  Tags,
+  UsersRound,
+  HeartHandshake,
+  Accessibility,
+  Scissors,
+  Milk,
+  Store,
+  UtensilsCrossed,
+  ShoppingBag,
+  Palette,
+  Factory,
+  Wallet
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
@@ -255,6 +268,37 @@ export const OnboardingScreen: React.FC = () => {
     return count;
   }, [ageRange, gender, categories, stateName, bizType, incomeRange]);
 
+  // Count of schemes applicable to the selected state (or nationwide schemes)
+  const stateSchemeCount = useMemo(() => {
+    if (!stateName) return 0;
+    return (schemesData as any[]).filter((s) => {
+      const states: string[] = s.applicable_states || [];
+      return states.length === 0 || states.includes('All India') || states.includes('All') || states.includes(stateName);
+    }).length;
+  }, [stateName]);
+
+  // Icon lookup maps for category chips and business-type illustration
+  const catIconMap: Record<string, React.ElementType> = {
+    SC: UsersRound,
+    ST: UsersRound,
+    OBC: UsersRound,
+    Minority: UsersRound,
+    Woman: HeartHandshake,
+    'Person with Disability': Accessibility,
+    General: User,
+  };
+
+  const bizIconMap: Record<string, React.ElementType> = {
+    textile_weaving: Scissors,
+    dairy_livestock: Milk,
+    retail_shop: Store,
+    food_processing: UtensilsCrossed,
+    street_vendor: ShoppingBag,
+    artisan_handicraft: Palette,
+    services: Briefcase,
+    manufacturing: Factory,
+  };
+
   // Finish Onboarding & Go to Home
   const handleCompleteOnboarding = async () => {
     await persistStep(7, { onboarding_completed: true });
@@ -430,6 +474,112 @@ export const OnboardingScreen: React.FC = () => {
                 </div>
                 <p className="text-[10px] text-[#004D40]/50 mt-1">
                   {language === 'hi' ? 'मिलान विश्वास स्तर' : 'Match confidence'}
+                </p>
+              </div>
+            )}
+
+            {/* Top Match So Far (blurred detail until Step 6) */}
+            {step >= 2 && liveMatches.length > 0 && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-1.5">
+                  <Trophy className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{language === 'hi' ? 'शीर्ष योजना अभी' : 'Top Match So Far'}</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[#FF6B35]/5 border border-[#FF6B35]/15">
+                  <p className="text-xs font-bold text-[#004D40] line-clamp-1">
+                    {language === 'hi' ? liveMatches[0].scheme.hindi_name : liveMatches[0].scheme.name}
+                  </p>
+                  <p className={`text-[11px] font-semibold mt-0.5 ${step >= 6 ? 'text-[#FF6B35]' : 'text-[#004D40]/40 blur-[3px] select-none'}`}>
+                    {language === 'hi' ? liveMatches[0].scheme.hindi_benefit_headline : liveMatches[0].scheme.benefit_headline}
+                  </p>
+                  {step < 6 && (
+                    <p className="text-[9px] text-[#004D40]/50 mt-1">
+                      {language === 'hi' ? 'विवरण के लिए जारी रखें' : 'Continue to reveal details'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Category-specific icons, live as soon as categories are picked */}
+            {step >= 3 && categories.length > 0 && !categories.includes('Prefer not to say') && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-2">
+                  <Tags className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{language === 'hi' ? 'प्रासंगिक श्रेणियां' : 'Relevant Categories'}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {categories.map((cat) => {
+                    const CatIcon = catIconMap[cat] || User;
+                    return (
+                      <span
+                        key={cat}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#004D40]/5 text-[10px] font-semibold text-[#004D40]"
+                      >
+                        <CatIcon className="w-3 h-3" />
+                        <span>{cat}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* State-specific live fact */}
+            {step >= 4 && stateName && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{stateName}</span>
+                </div>
+                <p className="text-[11px] text-[#004D40]/70">
+                  {language === 'hi'
+                    ? `${stateName} में ${stateSchemeCount} सक्रिय योजनाएं उपलब्ध हैं`
+                    : `${stateSchemeCount} active schemes available in ${stateName}`}
+                </p>
+              </div>
+            )}
+
+            {/* Comparative encouragement nudge */}
+            {step >= 3 && filledSignalsCount >= 2 && liveMatches.length > 0 && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 mb-1">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? 'बढ़िया प्रगति' : 'Great progress'}</span>
+                </div>
+                <p className="text-[11px] text-[#004D40]/70">
+                  {language === 'hi'
+                    ? 'आप पहले से ही अधिकांश नए आवेदकों की तुलना में अधिक योजनाओं के लिए योग्य हैं'
+                    : 'You already qualify for more schemes than most first-time applicants'}
+                </p>
+              </div>
+            )}
+
+            {/* Business-type mini illustration */}
+            {step >= 5 && bizType && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-lg bg-[#004D40]/5 flex items-center justify-center shrink-0 text-[#FF6B35]">
+                    {React.createElement(bizIconMap[bizType] || Briefcase, { className: 'w-5 h-5' })}
+                  </div>
+                  <p className="text-[11px] text-[#004D40]/70">
+                    {language === 'hi' ? 'आपका व्यवसाय क्षेत्र चुना गया' : 'Business sector selected'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Income to potential benefit ceiling preview */}
+            {step >= 6 && incomeRange && liveMatches.length > 0 && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-1.5">
+                  <Wallet className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{language === 'hi' ? 'संभावित लाभ' : 'Potential Benefit'}</span>
+                </div>
+                <p className="text-[11px] text-[#004D40]/70">
+                  {language === 'hi'
+                    ? `इस आय स्तर पर, आप ${liveMatches[0].scheme.benefits.hindi_max_loan_or_grant} तक के लाभ के लिए योग्य हो सकते हैं`
+                    : `At this income level, you could qualify for up to ${liveMatches[0].scheme.benefits.max_loan_or_grant}`}
                 </p>
               </div>
             )}

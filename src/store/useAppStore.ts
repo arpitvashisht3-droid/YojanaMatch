@@ -6,6 +6,7 @@ import { matchSchemes } from '../lib/matchingEngine';
 import { userRecordToProfile } from '../lib/userProfileHelper';
 
 const SESSION_STORAGE_KEY = 'ym_session_phone';
+const EMAIL_SESSION_STORAGE_KEY = 'ym_session_email';
 const BOOKMARKS_STORAGE_KEY = 'ym_saved_bookmarks';
 
 function loadStoredBookmarks(): string[] {
@@ -60,7 +61,7 @@ interface AppState {
 
   // Auth & Onboarding Actions
   initAuthSession: () => Promise<void>;
-  loginOrSignup: (name: string, phone: string) => Promise<{ isNewUser: boolean; user: UserRecord }>;
+  loginOrSignup: (name: string, identifier: string, authMethod?: 'mobile' | 'email') => Promise<{ isNewUser: boolean; user: UserRecord }>;
   updateUserProfile: (updates: Partial<UserRecord>) => Promise<UserRecord | null>;
   logout: () => void;
 }
@@ -123,6 +124,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   initAuthSession: async () => {
     try {
+      const storedEmailUser = localStorage.getItem(EMAIL_SESSION_STORAGE_KEY);
+      if (storedEmailUser) {
+        try {
+          const user: UserRecord = JSON.parse(storedEmailUser);
+          const nextScreen: AppScreen = user.onboarding_completed ? 'landing' : 'onboarding';
+          set({ user, currentScreen: nextScreen, isAuthChecking: false });
+          return;
+        } catch {
+          localStorage.removeItem(EMAIL_SESSION_STORAGE_KEY);
+        }
+      }
+
       const storedPhone = localStorage.getItem(SESSION_STORAGE_KEY);
       if (!storedPhone) {
         set({ user: null, currentScreen: 'signup', isAuthChecking: false });

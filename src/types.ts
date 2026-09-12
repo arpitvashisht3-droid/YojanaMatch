@@ -79,6 +79,7 @@ export interface UserRecord {
   id?: string;
   name: string;
   phone_number: string;
+  email?: string;
   created_at: string;
   onboarding_completed: boolean;
   onboarding_step?: number;

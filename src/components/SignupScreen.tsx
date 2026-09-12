@@ -53,7 +53,7 @@ export const SignupScreen: React.FC = () => {
     }
 
     try {
-      await loginOrSignup(cleanName, identifier);
+      await loginOrSignup(cleanName, identifier, authMethod);
     } catch (err: any) {
       setValidationError(err.message || 'Error continuing. Please check your connection.');
     }

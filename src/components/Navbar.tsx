@@ -4,7 +4,15 @@ import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 
 export const Navbar: React.FC = () => {
-  const { language, setLanguage, contentMode, setContentMode, currentScreen, navigateTo, user, logout, bookmarkedSchemeIds } = useAppStore();
+  const { language, setLanguage, contentMode, setContentMode, currentScreen, navigateTo, user, logout, bookmarkedSchemeIds, bgTheme, setBgTheme } = useAppStore();
+
+  const bgSwatches: { key: 'original' | 'tan' | 'navy' | 'stone' | 'vanilla'; color: string; label: string }[] = [
+    { key: 'original', color: '#FAFAF7', label: 'Original' },
+    { key: 'tan', color: '#D2B48C', label: 'Tan' },
+    { key: 'navy', color: '#000080', label: 'Navy' },
+    { key: 'stone', color: '#CBC3B4', label: 'Stone' },
+    { key: 'vanilla', color: '#F3E5AB', label: 'Vanilla' },
+  ];
   const t = translations[language];
 
   const handleBrandClick = () => {
@@ -150,6 +158,23 @@ export const Navbar: React.FC = () => {
             <Info className="w-4 h-4" />
             <span className="hidden sm:inline">{t.nav_about}</span>
           </button>
+
+          {/* Background Theme Swatches */}
+          <div className="flex items-center gap-1 px-1.5 py-1 rounded-full bg-[#004D40]/5 border border-[#004D40]/10">
+            {bgSwatches.map((sw) => (
+              <button
+                key={sw.key}
+                type="button"
+                onClick={() => setBgTheme(sw.key)}
+                title={sw.label}
+                aria-label={`Background: ${sw.label}`}
+                className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-transform hover:scale-110 ${
+                  bgTheme === sw.key ? 'border-[#FF6B35] scale-110' : 'border-white/60'
+                }`}
+                style={{ backgroundColor: sw.color, boxShadow: '0 0 0 1px rgba(0,0,0,0.08)' }}
+              />
+            ))}
+          </div>
 
           {/* Segmented Pill Language Toggle */}
           <div className="flex bg-[#004D40]/5 rounded-full p-0.5 border border-[#004D40]/10">

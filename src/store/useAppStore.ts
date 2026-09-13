@@ -50,6 +50,24 @@ function loadStoredBookmarks(): string[] {
   }
 }
 
+export type BgTheme = 'original' | 'tan' | 'navy' | 'stone' | 'vanilla';
+const BG_THEME_STORAGE_KEY = 'ym_bg_theme';
+
+export const BG_THEME_COLORS: Record<BgTheme, string> = {
+  original: '#FAFAF7',
+  tan: '#D2B48C',
+  navy: '#000080',
+  stone: '#CBC3B4',
+  vanilla: '#F3E5AB',
+};
+
+function loadStoredBgTheme(): BgTheme {
+  if (typeof window === 'undefined') return 'original';
+  const stored = localStorage.getItem(BG_THEME_STORAGE_KEY);
+  if (stored && stored in BG_THEME_COLORS) return stored as BgTheme;
+  return 'original';
+}
+
 interface AppState {
   language: AppLanguage;
   contentMode: ContentMode;
@@ -70,6 +88,7 @@ interface AppState {
   error: string | null;
   recommendationsLayout: '3column' | 'stacked';
   bookmarkedSchemeIds: string[];
+  bgTheme: BgTheme;
 
   // Actions
   setLanguage: (lang: AppLanguage) => void;
@@ -77,6 +96,7 @@ interface AppState {
   setInputText: (text: string) => void;
   setIsListening: (val: boolean) => void;
   setRecommendationsLayout: (layout: '3column' | 'stacked') => void;
+  setBgTheme: (theme: BgTheme) => void;
   toggleBookmark: (schemeId: string, categoryType: 'scheme' | 'scholarship') => void;
   isBookmarked: (schemeId: string, categoryType: 'scheme' | 'scholarship') => boolean;
   navigateTo: (screen: AppScreen) => void;
@@ -117,6 +137,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   error: null,
   recommendationsLayout: '3column',
   bookmarkedSchemeIds: loadStoredBookmarks(),
+  bgTheme: loadStoredBgTheme(),
 
   setLanguage: (lang) => set({ language: lang }),
   setContentMode: (mode) => {
@@ -134,6 +155,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   setInputText: (text) => set({ inputText: text, error: null }),
   setIsListening: (val) => set({ isListening: val }),
   setRecommendationsLayout: (layout) => set({ recommendationsLayout: layout }),
+  setBgTheme: (theme) => {
+    set({ bgTheme: theme });
+    try {
+      localStorage.setItem(BG_THEME_STORAGE_KEY, theme);
+    } catch {
+      // Ignored - localStorage unavailable
+    }
+  },
   toggleBookmark: (schemeId, categoryType) => {
     const key = `${categoryType}:${schemeId}`;
     const { bookmarkedSchemeIds } = get();

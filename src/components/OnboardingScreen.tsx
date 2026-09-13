@@ -1298,34 +1298,6 @@ export const OnboardingScreen: React.FC = () => {
         {/* Right Column: Live Match Preview Sidebar */}
         <aside className="w-full sticky top-20 self-start">
           <div className="bg-white rounded-2xl border border-[#004D40]/15 shadow-xs p-5 sm:p-6 space-y-0">
-            {/* Live Match Preview */}
-            {step >= 2 && (
-              <div className="pt-3 border-t border-[#004D40]/10">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-[#FF6B35]" />
-                  <span>{language === 'hi' ? 'लाइव मिलान' : 'Live Match Preview'}</span>
-                </div>
-                <p className="text-[11px] text-[#004D40]/70 mb-2">
-                  {language === 'hi'
-                    ? `${totalSchemesCount} में से ${liveMatches.length} योजनाएं अभी मेल खाती हैं`
-                    : `${liveMatches.length} of ${totalSchemesCount} schemes match so far`}
-                </p>
-                <div className="flex items-center gap-1">
-                  {[0, 1, 2, 3, 4].map((i) => (
-                    <span
-                      key={i}
-                      className={`h-1.5 flex-1 rounded-full transition-colors ${
-                        i < filledSignalsCount ? 'bg-[#FF6B35]' : 'bg-[#004D40]/10'
-                      }`}
-                    />
-                  ))}
-                </div>
-                <p className="text-[10px] text-[#004D40]/50 mt-1">
-                  {language === 'hi' ? 'मिलान विश्वास स्तर' : 'Match confidence'}
-                </p>
-              </div>
-            )}
-
             {/* Top Match So Far (blurred detail until Step 6) */}
             {step >= 2 && liveMatches.length > 0 && (
               <div className="pt-3 border-t border-[#004D40]/10">

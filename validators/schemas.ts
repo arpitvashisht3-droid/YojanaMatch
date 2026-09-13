@@ -32,6 +32,11 @@ export const userJsonSchema = {
         description: "Embedded user demographic and business attributes"
       },
       preferred_language: { enum: ["en", "hi"] },
+      saved_schemes: {
+        bsonType: "array",
+        items: { bsonType: "string" },
+        description: "List of saved scheme and scholarship IDs"
+      },
       created_at: { bsonType: "date" },
       updated_at: { bsonType: "date" }
     }

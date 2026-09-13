@@ -57,6 +57,7 @@ export interface UserDocument {
   onboarding: UserOnboardingState;
   profile: EmbeddedUserProfile;
   preferred_language?: "en" | "hi";
+  saved_schemes?: string[];
   created_at: Date;
   updated_at: Date;
 }

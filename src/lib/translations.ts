@@ -117,6 +117,16 @@ export const translations = {
     btn_save_changes: "Save Changes",
     profile_saved_success: "Profile updated successfully!",
 
+    // Saved Schemes
+    tab_profile: "Profile Details",
+    tab_saved_schemes: "Saved Schemes",
+    btn_save_scheme: "Save",
+    btn_saved_scheme: "Saved",
+    btn_unsave_scheme: "Remove",
+    no_saved_schemes: "No saved schemes yet",
+    no_saved_schemes_desc: "Tap the Save button on any scheme or scholarship card to bookmark it here for quick access.",
+    btn_explore_schemes: "Explore Schemes",
+
     // Recommendations Corner
     rec_section_title: "Recommended Schemes & Highlights",
     rec_did_you_know_title: "Did You Know?",
@@ -329,6 +339,16 @@ export const translations = {
     profile_subtitle: "आपकी प्रोफ़ाइल सुरक्षित है। जब चाहें विवरण बदलें, योजना पात्रता स्कोर तुरंत नए सिरे से लागू होंगे।",
     btn_save_changes: "परिवर्तन सुरक्षित करें",
     profile_saved_success: "प्रोफ़ाइल सफलतापूर्वक अपडेट हो गई!",
+
+    // Saved Schemes
+    tab_profile: "प्रोफ़ाइल विवरण",
+    tab_saved_schemes: "सहेजी गई योजनाएं",
+    btn_save_scheme: "सहेजें",
+    btn_saved_scheme: "सहेजा गया",
+    btn_unsave_scheme: "हटाएं",
+    no_saved_schemes: "कोई सहेजी गई योजना नहीं",
+    no_saved_schemes_desc: "त्वरित पहुंच के लिए किसी भी योजना या छात्रवृत्ति पर सहेजें बटन दबाएं।",
+    btn_explore_schemes: "योजनाएं खोजें",
 
     // Recommendations Corner
     rec_section_title: "अनुशंसित योजनाएं एवं मुख्य आकर्षण",

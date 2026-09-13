@@ -103,6 +103,7 @@ export interface UserRecord {
   education_level?: EducationLevel;
   current_marks_percentage?: number | null;
   course_type?: CourseType;
+  saved_schemes?: string[];
 }
 
 export interface MatchScoreDetail {

@@ -348,11 +348,113 @@ app.get("/api/user/match-history", requireAuth, async (req: AuthenticatedRequest
   }
 });
 
+const isStrictDb = () => process.env.NODE_ENV === "production" || process.env.STRICT_DB === "true";
+
+// ==========================================
+// 2.1 USER SAVED SCHEMES ENDPOINTS
+// ==========================================
+
+// GET /api/user/saved-schemes - Retrieve authenticated user's saved schemes
+app.get("/api/user/saved-schemes", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const userId = req.userDoc._id;
+    const savedIds = await UserModel.getSavedSchemes(userId);
+
+    let fullSchemes: any[] = [];
+    if (savedIds.length > 0) {
+      try {
+        const [dbSchemes, dbScholarships] = await Promise.all([
+          SchemeModel.getAllActiveSchemes().catch(() => []),
+          ScholarshipModel.getAllActiveScholarships().catch(() => []),
+        ]);
+        const allDb = [...(dbSchemes || []), ...(dbScholarships || [])];
+        if (allDb.length > 0) {
+          fullSchemes = allDb.filter((s: any) =>
+            savedIds.includes(s.scheme_id || s.scholarship_id || s.id)
+          );
+        } else if (!isStrictDb()) {
+          const fallback = [...(schemesRaw as any[]), ...(scholarshipsRaw as any[])];
+          fullSchemes = fallback.filter((s: any) =>
+            savedIds.includes(s.scheme_id || s.scholarship_id || s.id)
+          );
+        }
+      } catch (err: any) {
+        if (isStrictDb()) {
+          return res.status(503).json({
+            error: "Database Unavailable",
+            detail: err?.message || "MongoDB connection failed while resolving saved schemes",
+          });
+        }
+        const fallback = [...(schemesRaw as any[]), ...(scholarshipsRaw as any[])];
+        fullSchemes = fallback.filter((s: any) =>
+          savedIds.includes(s.scheme_id || s.scholarship_id || s.id)
+        );
+      }
+    }
+
+    return res.json({ saved_schemes: savedIds, schemes: fullSchemes });
+  } catch (error: any) {
+    if (isStrictDb()) {
+      return res.status(503).json({
+        error: "Database Unavailable",
+        detail: error?.message || "MongoDB connection is required in Production/STRICT_DB mode",
+      });
+    }
+    return res.status(500).json({ error: "Failed to fetch saved schemes", detail: error?.message });
+  }
+});
+
+// POST /api/user/saved-schemes - Save a scheme for the authenticated user
+app.post("/api/user/saved-schemes", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const { scheme_id, schemeId } = req.body || {};
+    const targetSchemeId = scheme_id || schemeId;
+
+    if (!targetSchemeId || typeof targetSchemeId !== "string" || !targetSchemeId.trim()) {
+      return res.status(400).json({ error: "Scheme ID is required." });
+    }
+
+    const userId = req.userDoc._id;
+    const updatedSaved = await UserModel.saveScheme(userId, targetSchemeId.trim());
+
+    return res.json({ success: true, saved_schemes: updatedSaved });
+  } catch (error: any) {
+    if (isStrictDb()) {
+      return res.status(503).json({
+        error: "Database Unavailable",
+        detail: error?.message || "MongoDB connection is required in Production/STRICT_DB mode",
+      });
+    }
+    return res.status(500).json({ error: "Failed to save scheme", detail: error?.message });
+  }
+});
+
+// DELETE /api/user/saved-schemes/:schemeId - Unsave a scheme for the authenticated user
+app.delete("/api/user/saved-schemes/:schemeId", requireAuth, async (req: AuthenticatedRequest, res: Response) => {
+  try {
+    const targetSchemeId = req.params.schemeId;
+    if (!targetSchemeId || !targetSchemeId.trim()) {
+      return res.status(400).json({ error: "Scheme ID parameter is required." });
+    }
+
+    const userId = req.userDoc._id;
+    const updatedSaved = await UserModel.unsaveScheme(userId, targetSchemeId.trim());
+
+    return res.json({ success: true, saved_schemes: updatedSaved });
+  } catch (error: any) {
+    if (isStrictDb()) {
+      return res.status(503).json({
+        error: "Database Unavailable",
+        detail: error?.message || "MongoDB connection is required in Production/STRICT_DB mode",
+      });
+    }
+    return res.status(500).json({ error: "Failed to unsave scheme", detail: error?.message });
+  }
+});
+
 // ==========================================
 // 3. SCHEMES & SCHOLARSHIPS ENDPOINTS
 // ==========================================
-
-const isStrictDb = () => process.env.NODE_ENV === "production" || process.env.STRICT_DB === "true";
 
 // POST /api/admin/sync-government-data - Ingest Authoritative Government Schemes
 // Requires: valid JWT (requireAuth) AND role === "admin" on the user document.

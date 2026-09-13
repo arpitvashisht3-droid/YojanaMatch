@@ -13,6 +13,7 @@ import {
   Coins,
   AlertCircle,
   Languages,
+  Bookmark,
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
@@ -34,6 +35,8 @@ export const ResultsScreen: React.FC = () => {
     bhashiniTranslating,
     bhashiniError,
     translateTextWithBhashini,
+    toggleSaveScheme,
+    isSchemeSaved,
   } = useAppStore();
   const t = translations[language];
 
@@ -292,8 +295,25 @@ export const ResultsScreen: React.FC = () => {
                     </div>
                   </button>
 
-                  {/* Sibling Action Buttons Column (Audio & Chevron - strictly siblings, never nested) */}
-                  <div className="flex flex-col items-center gap-3 shrink-0 pt-1">
+                  {/* Sibling Action Buttons Column (Save, Audio & Chevron - strictly siblings, never nested) */}
+                  <div className="flex flex-col items-center gap-2.5 shrink-0 pt-1">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSaveScheme(scheme.id);
+                      }}
+                      className={`touch-target p-2.5 rounded-full transition-all cursor-pointer ${
+                        isSchemeSaved(scheme.id)
+                          ? 'bg-[#FF6B35] text-white shadow-xs'
+                          : 'bg-[#004D40]/5 hover:bg-[#FF6B35]/15 text-[#004D40] hover:text-[#FF6B35]'
+                      }`}
+                      aria-label={isSchemeSaved(scheme.id) ? t.btn_saved_scheme : t.btn_save_scheme}
+                      title={isSchemeSaved(scheme.id) ? t.btn_saved_scheme : t.btn_save_scheme}
+                    >
+                      <Bookmark className={`w-4 h-4 ${isSchemeSaved(scheme.id) ? 'fill-current' : ''}`} />
+                    </button>
+
                     {!isTtsHidden && (
                       <button
                         type="button"
@@ -476,23 +496,36 @@ export const ResultsScreen: React.FC = () => {
                       </div>
                     )}
 
-                    {/* Direct Official Apply Button */}
-                    <div className="pt-2">
+                    {/* Action Buttons: Save Scheme & Direct Official Apply */}
+                    <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleSaveScheme(scheme.id)}
+                        className={`touch-target w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                          isSchemeSaved(scheme.id)
+                            ? 'bg-[#FF6B35] text-white border-[#FF6B35] shadow-xs'
+                            : 'bg-white text-[#004D40] border-[#004D40]/20 hover:border-[#FF6B35] hover:text-[#FF6B35]'
+                        }`}
+                      >
+                        <Bookmark className={`w-4 h-4 ${isSchemeSaved(scheme.id) ? 'fill-current' : ''}`} />
+                        <span>{isSchemeSaved(scheme.id) ? t.btn_saved_scheme : t.btn_save_scheme}</span>
+                      </button>
+
                       <a
                         href={scheme.official_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="touch-target w-full inline-flex items-center justify-center gap-2 py-4 px-6 rounded-xl font-bold text-base bg-[#004D40] hover:bg-[#00382E] text-white shadow-md shadow-[#004D40]/20 transition-all cursor-pointer focus:ring-2 focus:ring-offset-2 focus:ring-[#004D40]"
+                        className="touch-target flex-1 w-full inline-flex items-center justify-center gap-2 py-3.5 px-6 rounded-xl font-bold text-sm sm:text-base bg-[#004D40] hover:bg-[#00382E] text-white shadow-md shadow-[#004D40]/20 transition-all cursor-pointer focus:ring-2 focus:ring-offset-2 focus:ring-[#004D40]"
                       >
                         <span>{t.card_apply_now}</span>
                         <ExternalLink className="w-4 h-4" />
                       </a>
-                      <p className="text-[11px] text-[#004D40]/60 text-center mt-2 font-medium">
-                        {language === 'hi'
-                          ? 'यह लिंक आपको सीधे भारत सरकार के आधिकारिक पोर्टल पर ले जाएगा।'
-                          : 'Opens official Government of India scheme portal in a new tab.'}
-                      </p>
                     </div>
+                    <p className="text-[11px] text-[#004D40]/60 text-center font-medium">
+                      {language === 'hi'
+                        ? 'यह लिंक आपको सीधे भारत सरकार के आधिकारिक पोर्टल पर ले जाएगा।'
+                        : 'Opens official Government of India scheme portal in a new tab.'}
+                    </p>
                   </div>
                 )}
               </div>

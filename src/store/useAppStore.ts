@@ -6,12 +6,15 @@ import { matchSchemes } from '../lib/matchingEngine';
 import { userRecordToProfile } from '../lib/userProfileHelper';
 
 const SESSION_STORAGE_KEY = 'ym_session_phone';
+const TOKEN_STORAGE_KEY = 'ym_session_token';
 
 interface AppState {
   language: AppLanguage;
   contentMode: ContentMode;
   currentScreen: AppScreen;
   user: UserRecord | null;
+  savedSchemeIds: string[];
+  isSavedSchemesLoading: boolean;
   isAuthChecking: boolean;
   inputText: string;
   isListening: boolean;
@@ -47,6 +50,11 @@ interface AppState {
   updateExtractedProfileAndRematch: (updates: Partial<UserProfile>) => Promise<void>;
   translateTextWithBhashini: (text: string, sourceLang?: string, targetLang?: string) => Promise<string | null>;
 
+  // Saved Schemes Actions
+  fetchSavedSchemes: () => Promise<void>;
+  toggleSaveScheme: (schemeId: string) => Promise<void>;
+  isSchemeSaved: (schemeId: string) => boolean;
+
   // Auth & Onboarding Actions
   initAuthSession: () => Promise<void>;
   loginOrSignup: (name: string, phone: string) => Promise<{ isNewUser: boolean; user: UserRecord }>;
@@ -59,6 +67,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   contentMode: 'schemes',
   currentScreen: 'signup',
   user: null,
+  savedSchemeIds: [],
+  isSavedSchemesLoading: false,
   isAuthChecking: true,
   inputText: '',
   isListening: false,
@@ -98,11 +108,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       const storedPhone = localStorage.getItem(SESSION_STORAGE_KEY);
       if (!storedPhone) {
-        set({ user: null, currentScreen: 'signup', isAuthChecking: false });
+        set({ user: null, savedSchemeIds: [], currentScreen: 'signup', isAuthChecking: false });
         return;
       }
 
-      const res = await fetch(`/api/auth/me?phone=${encodeURIComponent(storedPhone)}`);
+      const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+      const headers: Record<string, string> = {};
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+      }
+
+      const res = await fetch(`/api/auth/me?phone=${encodeURIComponent(storedPhone)}`, { headers });
       if (res.ok) {
         const data = await res.json();
         if (data.user) {
@@ -110,18 +126,21 @@ export const useAppStore = create<AppState>((set, get) => ({
           const nextScreen: AppScreen = user.onboarding_completed ? 'landing' : 'onboarding';
           set({
             user,
+            savedSchemeIds: user.saved_schemes || [],
             currentScreen: nextScreen,
             isAuthChecking: false,
           });
+          get().fetchSavedSchemes();
           return;
         }
       }
       // If user not found on backend
       localStorage.removeItem(SESSION_STORAGE_KEY);
-      set({ user: null, currentScreen: 'signup', isAuthChecking: false });
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+      set({ user: null, savedSchemeIds: [], currentScreen: 'signup', isAuthChecking: false });
     } catch (err) {
       console.warn('Auth session check error:', err);
-      set({ isAuthChecking: false, currentScreen: 'signup' });
+      set({ isAuthChecking: false, currentScreen: 'signup', savedSchemeIds: [] });
     }
   },
 
@@ -142,14 +161,20 @@ export const useAppStore = create<AppState>((set, get) => ({
       const data = await res.json();
       const user: UserRecord = data.user;
       localStorage.setItem(SESSION_STORAGE_KEY, user.phone_number);
+      if (data.token) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
+      }
 
       const nextScreen: AppScreen = user.onboarding_completed ? 'landing' : 'onboarding';
       set({
         user,
+        savedSchemeIds: user.saved_schemes || [],
         currentScreen: nextScreen,
         isLoading: false,
         error: null,
       });
+
+      get().fetchSavedSchemes();
 
       return { isNewUser: data.isNewUser, user };
     } catch (err: any) {
@@ -163,9 +188,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!user) return null;
 
     try {
+      const storedToken = localStorage.getItem(TOKEN_STORAGE_KEY);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+      }
+
       const res = await fetch('/api/auth/update-profile', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           phone_number: user.phone_number,
           updates,
@@ -193,8 +224,11 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   logout: () => {
     localStorage.removeItem(SESSION_STORAGE_KEY);
+    localStorage.removeItem(TOKEN_STORAGE_KEY);
     set({
       user: null,
+      savedSchemeIds: [],
+      queryCache: {},
       currentScreen: 'signup',
       extractedProfile: {},
       matchedResults: [],
@@ -205,6 +239,93 @@ export const useAppStore = create<AppState>((set, get) => ({
       audioPlayingSchemeId: null,
       error: null,
     });
+  },
+
+  fetchSavedSchemes: async () => {
+    const { user } = get();
+    if (!user) {
+      set({ savedSchemeIds: [] });
+      return;
+    }
+
+    set({ isSavedSchemesLoading: true });
+    try {
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const phoneParam = user.phone_number ? `?phone=${encodeURIComponent(user.phone_number)}` : '';
+
+      const res = await fetch(`/api/user/saved-schemes${phoneParam}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        const ids: string[] = Array.isArray(data.saved_schemes) ? data.saved_schemes : [];
+        set({ savedSchemeIds: ids, isSavedSchemesLoading: false });
+      } else {
+        set({ isSavedSchemesLoading: false });
+      }
+    } catch (err) {
+      console.warn('Failed to fetch user saved schemes:', err);
+      set({ isSavedSchemesLoading: false });
+    }
+  },
+
+  toggleSaveScheme: async (schemeId: string) => {
+    const { user, savedSchemeIds } = get();
+    if (!user || !schemeId) return;
+
+    const cleanId = schemeId.trim();
+    const isSaved = savedSchemeIds.includes(cleanId);
+    const updated = isSaved
+      ? savedSchemeIds.filter((id) => id !== cleanId)
+      : [...savedSchemeIds, cleanId];
+
+    // Optimistic local update
+    set({ savedSchemeIds: updated });
+
+    try {
+      const token = localStorage.getItem(TOKEN_STORAGE_KEY);
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+      const phoneParam = user.phone_number ? `?phone=${encodeURIComponent(user.phone_number)}` : '';
+
+      if (isSaved) {
+        const res = await fetch(`/api/user/saved-schemes/${encodeURIComponent(cleanId)}${phoneParam}`, {
+          method: 'DELETE',
+          headers,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.saved_schemes)) {
+            set({ savedSchemeIds: data.saved_schemes });
+          }
+        } else {
+          // Rollback on failure
+          set({ savedSchemeIds });
+        }
+      } else {
+        const res = await fetch(`/api/user/saved-schemes${phoneParam}`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ scheme_id: cleanId }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.saved_schemes)) {
+            set({ savedSchemeIds: data.saved_schemes });
+          }
+        } else {
+          // Rollback on failure
+          set({ savedSchemeIds });
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to toggle save scheme:', err);
+      set({ savedSchemeIds });
+    }
+  },
+
+  isSchemeSaved: (schemeId: string) => {
+    return get().savedSchemeIds.includes(schemeId.trim());
   },
 
   toggleCard: (schemeId) => {

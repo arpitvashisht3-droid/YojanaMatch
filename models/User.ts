@@ -114,6 +114,7 @@ export class UserModel {
       },
       profile: userData.profile || {},
       preferred_language: userData.preferred_language || "en",
+      saved_schemes: [],
       created_at: now,
       updated_at: now,
     };
@@ -240,5 +241,110 @@ export class UserModel {
       return user;
     }
     return null;
+  }
+
+  /**
+   * Retrieve saved scheme IDs for authenticated user.
+   * In Production or STRICT_DB mode, MongoDB is mandatory and in-memory fallback is strictly disabled.
+   */
+  static async getSavedSchemes(id: ObjectId | string): Promise<string[]> {
+    const col = getColOrNull();
+    if (col) {
+      const objId = typeof id === "string" ? new ObjectId(id) : id;
+      const user = await col.findOne({ _id: objId });
+      return user?.saved_schemes || [];
+    }
+
+    if (process.env.NODE_ENV === "production" || process.env.STRICT_DB === "true") {
+      throw new Error("MongoDB database connection is required in Production/STRICT_DB mode. In-memory fallback is disabled.");
+    }
+
+    const idStr = typeof id === "string" ? id : id.toString();
+    const user = inMemoryUsersMap.get(idStr);
+    return user?.saved_schemes || [];
+  }
+
+  /**
+   * Save a scheme to user's saved_schemes list using $addToSet.
+   * In Production or STRICT_DB mode, MongoDB is mandatory and in-memory fallback is strictly disabled.
+   */
+  static async saveScheme(id: ObjectId | string, schemeId: string): Promise<string[]> {
+    if (!schemeId || !schemeId.trim()) {
+      throw new Error("Invalid scheme ID");
+    }
+    const cleanSchemeId = schemeId.trim();
+
+    const col = getColOrNull();
+    if (col) {
+      const objId = typeof id === "string" ? new ObjectId(id) : id;
+      const result = await col.findOneAndUpdate(
+        { _id: objId },
+        {
+          $addToSet: { saved_schemes: cleanSchemeId },
+          $set: { updated_at: new Date() },
+        },
+        { returnDocument: "after" }
+      );
+      return result?.saved_schemes || [];
+    }
+
+    if (process.env.NODE_ENV === "production" || process.env.STRICT_DB === "true") {
+      throw new Error("MongoDB database connection is required in Production/STRICT_DB mode. In-memory fallback is disabled.");
+    }
+
+    const idStr = typeof id === "string" ? id : id.toString();
+    const user = inMemoryUsersMap.get(idStr);
+    if (user) {
+      if (!user.saved_schemes) {
+        user.saved_schemes = [];
+      }
+      if (!user.saved_schemes.includes(cleanSchemeId)) {
+        user.saved_schemes.push(cleanSchemeId);
+      }
+      user.updated_at = new Date();
+      return user.saved_schemes;
+    }
+    return [];
+  }
+
+  /**
+   * Remove a scheme from user's saved_schemes list using $pull.
+   * In Production or STRICT_DB mode, MongoDB is mandatory and in-memory fallback is strictly disabled.
+   */
+  static async unsaveScheme(id: ObjectId | string, schemeId: string): Promise<string[]> {
+    if (!schemeId || !schemeId.trim()) {
+      throw new Error("Invalid scheme ID");
+    }
+    const cleanSchemeId = schemeId.trim();
+
+    const col = getColOrNull();
+    if (col) {
+      const objId = typeof id === "string" ? new ObjectId(id) : id;
+      const result = await col.findOneAndUpdate(
+        { _id: objId },
+        {
+          $pull: { saved_schemes: cleanSchemeId },
+          $set: { updated_at: new Date() },
+        },
+        { returnDocument: "after" }
+      );
+      return result?.saved_schemes || [];
+    }
+
+    if (process.env.NODE_ENV === "production" || process.env.STRICT_DB === "true") {
+      throw new Error("MongoDB database connection is required in Production/STRICT_DB mode. In-memory fallback is disabled.");
+    }
+
+    const idStr = typeof id === "string" ? id : id.toString();
+    const user = inMemoryUsersMap.get(idStr);
+    if (user) {
+      if (!user.saved_schemes) {
+        user.saved_schemes = [];
+      }
+      user.saved_schemes = user.saved_schemes.filter((s) => s !== cleanSchemeId);
+      user.updated_at = new Date();
+      return user.saved_schemes;
+    }
+    return [];
   }
 }

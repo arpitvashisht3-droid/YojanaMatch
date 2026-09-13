@@ -97,5 +97,6 @@ export function toFlatUser(userDoc: UserDocument | any): UserRecord {
     education_level: profile.education_level ?? undefined,
     course_type: profile.course_type ?? undefined,
     current_marks_percentage: profile.current_marks_percentage ?? undefined,
+    saved_schemes: Array.isArray(userDoc.saved_schemes) ? userDoc.saved_schemes : [],
   };
 }

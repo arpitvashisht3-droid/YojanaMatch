@@ -23,6 +23,7 @@ import {
   isBhashiniConfigured,
 } from "./src/server/bhashiniService.js";
 import { DataIngestionService } from "./src/server/dataIngestionService.js";
+import { applyCollectionValidatorsAndIndexes } from "./validators/schemas.js";
 
 // Static JSON dataset fallbacks
 import schemesRaw from "./src/data/schemes.json" assert { type: "json" };
@@ -862,6 +863,9 @@ async function startServer() {
     console.log("Connecting to MongoDB Atlas...");
     const db = await connectDB();
     console.log(`Successfully connected to MongoDB database: '${db.databaseName}'`);
+    await applyCollectionValidatorsAndIndexes(db).catch((vErr) => {
+      console.warn("Notice: Validator/Index setup warning (non-fatal):", vErr?.message || vErr);
+    });
 
     // Auto-seed: if the schemes collection is empty, seed from bundled static JSON.
     // This handles fresh Render deployments without a separate seed job.

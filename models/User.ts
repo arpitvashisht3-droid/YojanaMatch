@@ -106,7 +106,6 @@ export class UserModel {
     const newUser: UserDocument = {
       name: userData.name.trim(),
       phone_number: cleanPhone,
-      password_hash: userData.password_hash,
       role: userData.role || "user",
       onboarding: {
         completed: false,
@@ -118,6 +117,9 @@ export class UserModel {
       created_at: now,
       updated_at: now,
     };
+    if (userData.password_hash) {
+      newUser.password_hash = userData.password_hash;
+    }
 
     const col = getColOrNull();
     if (col) {

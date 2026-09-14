@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { AppLanguage, AppScreen, ContentMode, MatchedSchemeResult, UserProfile, UserRecord } from '../types';
+import { AppLanguage, AppScreen, ContentMode, MatchedSchemeResult, Scheme, UserProfile, UserRecord } from '../types';
 import schemesRaw from '../data/schemes.json';
 import scholarshipsRaw from '../data/scholarships.json';
 import { matchSchemes } from '../lib/matchingEngine';
@@ -8,12 +8,90 @@ import { userRecordToProfile } from '../lib/userProfileHelper';
 const SESSION_STORAGE_KEY = 'ym_session_phone';
 const TOKEN_STORAGE_KEY = 'ym_session_token';
 
+// ── Background Theme ────────────────────────────────────────────────────────
+export type BgTheme = 'original' | 'tan' | 'navy' | 'stone' | 'vanilla';
+
+export const BG_THEME_COLORS: Record<BgTheme, string> = {
+  original: '#FAFAF7',
+  tan: '#D2B48C',
+  navy: '#000080',
+  stone: '#CBC3B4',
+  vanilla: '#F3E5AB',
+};
+
+const BG_THEME_STORAGE_KEY = 'ym_bg_theme';
+
+function loadStoredBgTheme(): BgTheme {
+  if (typeof window === 'undefined') return 'original';
+  const stored = localStorage.getItem(BG_THEME_STORAGE_KEY);
+  if (stored && stored in BG_THEME_COLORS) return stored as BgTheme;
+  return 'original';
+}
+
+/** Canonical public scheme/scholarship ID (Mongo uses scheme_id / scholarship_id; JSON uses id). */
+export function getCanonicalSchemeId(raw: any): string {
+  if (raw == null) return '';
+  if (typeof raw === 'string' || typeof raw === 'number') return String(raw).trim();
+  if (typeof raw === 'object') {
+    // Prefer human scheme keys over Mongo ObjectId-looking values.
+    const publicId = raw.scheme_id || raw.scholarship_id || raw.id;
+    if (publicId != null && String(publicId).trim()) {
+      const asStr = String(publicId).trim();
+      // If `id` is actually a 24-char hex ObjectId but scheme_id exists, prefer scheme_id.
+      const looksLikeObjectId = /^[a-fA-F0-9]{24}$/.test(asStr);
+      if (looksLikeObjectId && (raw.scheme_id || raw.scholarship_id)) {
+        return String(raw.scheme_id || raw.scholarship_id).trim();
+      }
+      return asStr;
+    }
+    if (typeof raw._id === 'string' && raw._id.trim()) return raw._id.trim();
+    if (raw._id?.toString) {
+      const fromOid = String(raw._id.toString()).trim();
+      if (fromOid && fromOid !== '[object Object]') return fromOid;
+    }
+  }
+  return '';
+}
+
+/** Ensure matched/API scheme objects always expose `.id` for save/display. */
+export function normalizeSchemeRecord(raw: any): Scheme | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const id = getCanonicalSchemeId(raw);
+  if (!id) return null;
+  return {
+    ...raw,
+    id,
+  } as Scheme;
+}
+
+function normalizeSavedIdList(entries: any[]): string[] {
+  if (!Array.isArray(entries)) return [];
+  const out: string[] = [];
+  for (const entry of entries) {
+    const id = getCanonicalSchemeId(entry);
+    if (id && !out.includes(id)) out.push(id);
+  }
+  return out;
+}
+
+function normalizeMatchedResults(results: MatchedSchemeResult[]): MatchedSchemeResult[] {
+  return (results || [])
+    .map((r) => {
+      const scheme = normalizeSchemeRecord(r?.scheme);
+      if (!scheme) return null;
+      return { ...r, scheme };
+    })
+    .filter((r): r is MatchedSchemeResult => r !== null);
+}
+
 interface AppState {
   language: AppLanguage;
   contentMode: ContentMode;
   currentScreen: AppScreen;
   user: UserRecord | null;
   savedSchemeIds: string[];
+  /** Full scheme objects from GET /api/user/saved-schemes (MongoDB source of truth). */
+  savedSchemes: Scheme[];
   isSavedSchemesLoading: boolean;
   isAuthChecking: boolean;
   inputText: string;
@@ -29,15 +107,27 @@ interface AppState {
   queryCache: Record<string, { profile: UserProfile; results: MatchedSchemeResult[] }>;
   error: string | null;
   recommendationsLayout: '3column' | 'stacked';
+  bgTheme: BgTheme;
   bhashiniTranslating: boolean;
   bhashiniError: string | null;
+  /**
+   * Language the user intends to speak into the mic (independent of UI `language`).
+   * Web Speech has no reliable per-result spoken-language detection.
+   */
+  speechLanguage: AppLanguage;
+  /** When set, next discovery should treat inputText as voice transcript in this language. */
+  voiceSourceLanguage: AppLanguage | null;
 
   // Actions
   setLanguage: (lang: AppLanguage) => void;
+  setSpeechLanguage: (lang: AppLanguage) => void;
   setContentMode: (mode: ContentMode) => void;
   setInputText: (text: string) => void;
   setIsListening: (val: boolean) => void;
   setRecommendationsLayout: (layout: '3column' | 'stacked') => void;
+  setBgTheme: (theme: BgTheme) => void;
+  markVoiceInputSource: (lang: AppLanguage) => void;
+  clearVoiceInputSource: () => void;
   navigateTo: (screen: AppScreen) => void;
   toggleCard: (schemeId: string) => void;
   setAudioPlaying: (schemeId: string | null) => void;
@@ -49,15 +139,16 @@ interface AppState {
   fetchExplanation: (schemeId: string) => Promise<void>;
   updateExtractedProfileAndRematch: (updates: Partial<UserProfile>) => Promise<void>;
   translateTextWithBhashini: (text: string, sourceLang?: string, targetLang?: string) => Promise<string | null>;
+  transliterateTextWithBhashini: (text: string, sourceLang?: string, targetLang?: string) => Promise<string | null>;
 
-  // Saved Schemes Actions
+  // Saved Schemes Actions (MongoDB / JWT — single source of truth)
   fetchSavedSchemes: () => Promise<void>;
   toggleSaveScheme: (schemeId: string) => Promise<void>;
   isSchemeSaved: (schemeId: string) => boolean;
 
   // Auth & Onboarding Actions
   initAuthSession: () => Promise<void>;
-  loginOrSignup: (name: string, phone: string) => Promise<{ isNewUser: boolean; user: UserRecord }>;
+  loginOrSignup: (name: string, phone: string, authMethod?: 'mobile' | 'email', rememberMe?: boolean) => Promise<{ isNewUser: boolean; user: UserRecord }>;
   updateUserProfile: (updates: Partial<UserRecord>) => Promise<UserRecord | null>;
   logout: () => void;
 }
@@ -68,6 +159,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentScreen: 'signup',
   user: null,
   savedSchemeIds: [],
+  savedSchemes: [],
   isSavedSchemesLoading: false,
   isAuthChecking: true,
   inputText: '',
@@ -83,10 +175,14 @@ export const useAppStore = create<AppState>((set, get) => ({
   queryCache: {},
   error: null,
   recommendationsLayout: '3column',
+  bgTheme: loadStoredBgTheme(),
   bhashiniTranslating: false,
   bhashiniError: null,
+  speechLanguage: 'en',
+  voiceSourceLanguage: null,
 
   setLanguage: (lang) => set({ language: lang }),
+  setSpeechLanguage: (lang) => set({ speechLanguage: lang }),
   setContentMode: (mode) => {
     const { contentMode, currentScreen } = get();
     if (contentMode === mode) return;
@@ -102,13 +198,23 @@ export const useAppStore = create<AppState>((set, get) => ({
   setInputText: (text) => set({ inputText: text, error: null }),
   setIsListening: (val) => set({ isListening: val }),
   setRecommendationsLayout: (layout) => set({ recommendationsLayout: layout }),
+  setBgTheme: (theme) => {
+    set({ bgTheme: theme });
+    try {
+      localStorage.setItem(BG_THEME_STORAGE_KEY, theme);
+    } catch {
+      // Ignored - localStorage unavailable
+    }
+  },
+  markVoiceInputSource: (lang) => set({ voiceSourceLanguage: lang }),
+  clearVoiceInputSource: () => set({ voiceSourceLanguage: null }),
   navigateTo: (screen) => set({ currentScreen: screen }),
 
   initAuthSession: async () => {
     try {
       const storedPhone = localStorage.getItem(SESSION_STORAGE_KEY);
       if (!storedPhone) {
-        set({ user: null, savedSchemeIds: [], currentScreen: 'signup', isAuthChecking: false });
+        set({ user: null, savedSchemeIds: [], savedSchemes: [], currentScreen: 'signup', isAuthChecking: false });
         return;
       }
 
@@ -126,7 +232,7 @@ export const useAppStore = create<AppState>((set, get) => ({
           const nextScreen: AppScreen = user.onboarding_completed ? 'landing' : 'onboarding';
           set({
             user,
-            savedSchemeIds: user.saved_schemes || [],
+            savedSchemeIds: normalizeSavedIdList(user.saved_schemes || []),
             currentScreen: nextScreen,
             isAuthChecking: false,
           });
@@ -137,10 +243,10 @@ export const useAppStore = create<AppState>((set, get) => ({
       // If user not found on backend
       localStorage.removeItem(SESSION_STORAGE_KEY);
       localStorage.removeItem(TOKEN_STORAGE_KEY);
-      set({ user: null, savedSchemeIds: [], currentScreen: 'signup', isAuthChecking: false });
+      set({ user: null, savedSchemeIds: [], savedSchemes: [], currentScreen: 'signup', isAuthChecking: false });
     } catch (err) {
       console.warn('Auth session check error:', err);
-      set({ isAuthChecking: false, currentScreen: 'signup', savedSchemeIds: [] });
+      set({ isAuthChecking: false, currentScreen: 'signup', savedSchemeIds: [], savedSchemes: [] });
     }
   },
 
@@ -168,7 +274,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const nextScreen: AppScreen = user.onboarding_completed ? 'landing' : 'onboarding';
       set({
         user,
-        savedSchemeIds: user.saved_schemes || [],
+        savedSchemeIds: normalizeSavedIdList(user.saved_schemes || []),
         currentScreen: nextScreen,
         isLoading: false,
         error: null,
@@ -225,9 +331,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   logout: () => {
     localStorage.removeItem(SESSION_STORAGE_KEY);
     localStorage.removeItem(TOKEN_STORAGE_KEY);
+    // Clear legacy localStorage bookmarks if present (MongoDB is the sole source of truth).
+    localStorage.removeItem('ym_saved_bookmarks');
     set({
       user: null,
       savedSchemeIds: [],
+      savedSchemes: [],
       queryCache: {},
       currentScreen: 'signup',
       extractedProfile: {},
@@ -238,13 +347,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       expandedCardIds: [],
       audioPlayingSchemeId: null,
       error: null,
+      voiceSourceLanguage: null,
     });
   },
 
   fetchSavedSchemes: async () => {
     const { user } = get();
     if (!user) {
-      set({ savedSchemeIds: [] });
+      set({ savedSchemeIds: [], savedSchemes: [] });
       return;
     }
 
@@ -258,8 +368,28 @@ export const useAppStore = create<AppState>((set, get) => ({
       const res = await fetch(`/api/user/saved-schemes${phoneParam}`, { headers });
       if (res.ok) {
         const data = await res.json();
-        const ids: string[] = Array.isArray(data.saved_schemes) ? data.saved_schemes : [];
-        set({ savedSchemeIds: ids, isSavedSchemesLoading: false });
+        const ids = normalizeSavedIdList(data.saved_schemes);
+        const fromApi = Array.isArray(data.schemes)
+          ? data.schemes.map(normalizeSchemeRecord).filter((s: Scheme | null): s is Scheme => !!s)
+          : [];
+
+        const have = new Set(fromApi.map((s) => s.id));
+        const localAll = [...(schemesRaw as Scheme[]), ...(scholarshipsRaw as Scheme[])];
+        const fromLocal = ids
+          .filter((id) => !have.has(id))
+          .map((id) => localAll.find((s) => getCanonicalSchemeId(s) === id) || null)
+          .map((s) => normalizeSchemeRecord(s))
+          .filter((s): s is Scheme => !!s);
+
+        const schemes = [...fromApi, ...fromLocal];
+        console.debug('[saved-schemes] fetched ids:', ids);
+        console.debug('[saved-schemes] resolved schemes:', schemes.map((s) => s.id));
+        console.debug(
+          '[saved-schemes] unresolved ids:',
+          ids.filter((id) => !schemes.some((s) => s.id === id))
+        );
+
+        set({ savedSchemeIds: ids, savedSchemes: schemes, isSavedSchemesLoading: false });
       } else {
         set({ isSavedSchemesLoading: false });
       }
@@ -270,17 +400,31 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   toggleSaveScheme: async (schemeId: string) => {
-    const { user, savedSchemeIds } = get();
+    const { user, savedSchemeIds, savedSchemes, matchedResults } = get();
     if (!user || !schemeId) return;
 
-    const cleanId = schemeId.trim();
+    const cleanId = getCanonicalSchemeId(schemeId);
+    if (!cleanId) return;
+
     const isSaved = savedSchemeIds.includes(cleanId);
-    const updated = isSaved
+    const updatedIds = isSaved
       ? savedSchemeIds.filter((id) => id !== cleanId)
       : [...savedSchemeIds, cleanId];
 
-    // Optimistic local update
-    set({ savedSchemeIds: updated });
+    let nextSchemes = savedSchemes;
+    if (isSaved) {
+      nextSchemes = savedSchemes.filter((s) => getCanonicalSchemeId(s) !== cleanId);
+    } else if (!savedSchemes.some((s) => getCanonicalSchemeId(s) === cleanId)) {
+      const fromResults = matchedResults.find((r) => getCanonicalSchemeId(r.scheme) === cleanId)?.scheme;
+      const fromLocal = [...(schemesRaw as Scheme[]), ...(scholarshipsRaw as Scheme[])].find(
+        (s) => getCanonicalSchemeId(s) === cleanId
+      );
+      const normalized = normalizeSchemeRecord(fromResults || fromLocal);
+      if (normalized) nextSchemes = [...savedSchemes, normalized];
+    }
+
+    set({ savedSchemeIds: updatedIds, savedSchemes: nextSchemes });
+    console.debug('[saved-schemes] toggle', { cleanId, nowSaved: !isSaved, savedSchemeIds: updatedIds });
 
     try {
       const token = localStorage.getItem(TOKEN_STORAGE_KEY);
@@ -296,11 +440,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.saved_schemes)) {
-            set({ savedSchemeIds: data.saved_schemes });
+            const ids = normalizeSavedIdList(data.saved_schemes);
+            set({
+              savedSchemeIds: ids,
+              savedSchemes: nextSchemes.filter((s) => ids.includes(getCanonicalSchemeId(s))),
+            });
           }
         } else {
-          // Rollback on failure
-          set({ savedSchemeIds });
+          set({ savedSchemeIds, savedSchemes });
         }
       } else {
         const res = await fetch(`/api/user/saved-schemes${phoneParam}`, {
@@ -311,21 +458,21 @@ export const useAppStore = create<AppState>((set, get) => ({
         if (res.ok) {
           const data = await res.json();
           if (Array.isArray(data.saved_schemes)) {
-            set({ savedSchemeIds: data.saved_schemes });
+            set({ savedSchemeIds: normalizeSavedIdList(data.saved_schemes), savedSchemes: nextSchemes });
           }
         } else {
-          // Rollback on failure
-          set({ savedSchemeIds });
+          set({ savedSchemeIds, savedSchemes });
         }
       }
     } catch (err) {
       console.warn('Failed to toggle save scheme:', err);
-      set({ savedSchemeIds });
+      set({ savedSchemeIds, savedSchemes });
     }
   },
 
   isSchemeSaved: (schemeId: string) => {
-    return get().savedSchemeIds.includes(schemeId.trim());
+    const cleanId = getCanonicalSchemeId(schemeId);
+    return cleanId ? get().savedSchemeIds.includes(cleanId) : false;
   },
 
   toggleCard: (schemeId) => {
@@ -344,21 +491,126 @@ export const useAppStore = create<AppState>((set, get) => ({
   setAudioPlaying: (schemeId) => set({ audioPlayingSchemeId: schemeId }),
 
   startDiscovery: async (customText?: string) => {
-    const textToAnalyze = customText !== undefined ? customText : get().inputText;
+    let textToAnalyze = customText !== undefined ? customText : get().inputText;
     if (!textToAnalyze.trim()) return;
 
-    const { user, language, queryCache, contentMode } = get();
+    const { user, language, queryCache, contentMode, voiceSourceLanguage, speechLanguage } = get();
     const knownProfile = userRecordToProfile(user);
+
+    // Voice pipeline uses explicit speech language (set at mic start), NOT UI language.
+    // Chrome Web Speech does not return a detected spoken language on results.
+    // Typed/sample paths clear voiceSourceLanguage or pass customText.
+    const sourceLangForNmt: AppLanguage | null =
+      customText !== undefined || voiceSourceLanguage == null
+        ? null
+        : voiceSourceLanguage;
+
+    const recognitionLangTag =
+      sourceLangForNmt === 'hi' ? 'hi-IN' : sourceLangForNmt === 'en' ? 'en-IN' : null;
+    const processingAs =
+      sourceLangForNmt == null
+        ? 'typed/sample (no voice pipeline)'
+        : sourceLangForNmt === 'hi'
+          ? 'Hindi voice → transliterate if Roman → NMT hi→en → extract'
+          : 'English voice → extract directly';
+
+    console.log('[VOICE] UI language:', language);
+    console.log('[VOICE] speech language:', sourceLangForNmt ?? speechLanguage);
+    console.log('[VOICE] recognition.lang:', recognitionLangTag ?? '(n/a — not voice)');
+    console.log('[VOICE] raw transcript:', textToAnalyze.trim());
+    console.log('[VOICE] processing as:', processingAs);
+
+    if (sourceLangForNmt && sourceLangForNmt !== 'en') {
+      set({
+        isLoading: true,
+        loadingMessageKey: 'loading_understanding',
+        error: null,
+        bhashiniError: null,
+      });
+
+      let textForNmt = textToAnalyze.trim();
+
+      // Chrome hi-IN often returns Roman Hindi (Latin), not Devanagari.
+      // Existing NMT hi→en ignores Latin Hindi (echoes it). Normalize via
+      // BHASHINI IndicXlit (en→hi transliteration) when the transcript is Latin.
+      const looksRomanized =
+        sourceLangForNmt === 'hi' &&
+        /[A-Za-z]/.test(textForNmt) &&
+        !/[\u0900-\u097F]/.test(textForNmt);
+
+      if (looksRomanized) {
+        console.log('[BHASHINI] transliteration request', {
+          url: '/api/bhashini/transliterate',
+          text: textForNmt,
+          source_language: 'en',
+          target_language: 'hi',
+        });
+        const transliterated = await get().transliterateTextWithBhashini(
+          textForNmt,
+          'en',
+          'hi'
+        );
+        console.log('[BHASHINI] transliteration response', transliterated);
+        if (!transliterated) {
+          const failMsg =
+            get().bhashiniError ||
+            (language === 'hi'
+              ? 'भाषिणी लिप्यंतरण विफल रहा। कृपया फिर कोशिश करें या देवनागरी में बोलें/लिखें।'
+              : 'BHASHINI transliteration failed. Please try again or type in Devanagari/English.');
+          set({
+            isLoading: false,
+            error: failMsg,
+            voiceSourceLanguage: null,
+          });
+          return;
+        }
+        textForNmt = transliterated;
+      }
+
+      console.log('[BHASHINI] translation request', {
+        url: '/api/bhashini/translate',
+        text: textForNmt,
+        source_language: sourceLangForNmt,
+        target_language: 'en',
+      });
+      const translated = await get().translateTextWithBhashini(
+        textForNmt,
+        sourceLangForNmt,
+        'en'
+      );
+      console.log('[BHASHINI] translation response', translated);
+      if (!translated) {
+        const failMsg =
+          get().bhashiniError ||
+          (language === 'hi'
+            ? 'भाषिणी अनुवाद विफल रहा। कृपया फिर कोशिश करें या अंग्रेज़ी में लिखें।'
+            : 'BHASHINI translation failed. Please try again or type your query in English.');
+        set({
+          isLoading: false,
+          error: failMsg,
+          voiceSourceLanguage: null,
+        });
+        return;
+      }
+      textToAnalyze = translated;
+      set({ inputText: translated, voiceSourceLanguage: null, error: null });
+    } else if (customText === undefined) {
+      // English voice or unmarked input — do not call BHASHINI.
+      set({ voiceSourceLanguage: null });
+    }
+
+    console.log('[DISCOVERY] text sent to extraction', textToAnalyze.trim());
 
     const cacheKey = `${contentMode}:${language}:${textToAnalyze.trim().toLowerCase()}`;
     const cached = queryCache[cacheKey];
 
     if (cached) {
+      const normalizedCached = normalizeMatchedResults(cached.results);
       set({
         extractedProfile: cached.profile,
-        matchedResults: cached.results,
+        matchedResults: normalizedCached,
         currentScreen: 'results',
-        expandedCardIds: cached.results.length > 0 ? [cached.results[0].scheme.id] : [],
+        expandedCardIds: normalizedCached.length > 0 ? [normalizedCached[0].scheme.id] : [],
         isLoading: false,
         error: null,
       });
@@ -481,6 +733,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       audioPlayingSchemeId: null,
       isLoading: false,
       error: null,
+      voiceSourceLanguage: null,
     });
   },
 
@@ -534,6 +787,11 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!text || !text.trim()) return null;
     set({ bhashiniTranslating: true, bhashiniError: null });
     try {
+      console.log('[BHASHINI] translation request', {
+        text,
+        source_language: sourceLang,
+        target_language: targetLang,
+      });
       const res = await fetch('/api/bhashini/translate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -544,25 +802,85 @@ export const useAppStore = create<AppState>((set, get) => ({
         }),
       });
 
-      if (res.ok) {
-        const data = await res.json();
-        set({ bhashiniTranslating: false });
-        if (data.status === 'success' && data.translated_text) {
-          return data.translated_text;
-        }
-      } else if (res.status === 503) {
-        const errData = await res.json().catch(() => ({}));
-        const msg = errData.error || 'BHASHINI credentials not configured (503 Service Unavailable).';
+      const data = await res.json().catch(() => ({}));
+      console.log('[BHASHINI] translation response', { status: res.status, data });
+
+      if (res.ok && data.status === 'success' && data.translated_text) {
+        set({ bhashiniTranslating: false, bhashiniError: null });
+        return data.translated_text as string;
+      }
+
+      if (res.status === 503) {
+        const msg =
+          data.error ||
+          'BHASHINI credentials not configured (503 Service Unavailable).';
         set({ bhashiniTranslating: false, bhashiniError: msg });
         return null;
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        set({ bhashiniTranslating: false, bhashiniError: errData.error || 'Translation failed' });
       }
+
+      set({
+        bhashiniTranslating: false,
+        bhashiniError: data.error || data.detail || 'BHASHINI translation failed',
+      });
+      return null;
     } catch (err: any) {
-      set({ bhashiniTranslating: false, bhashiniError: err?.message || 'Translation network error' });
+      console.log('[BHASHINI] network error', err);
+      set({
+        bhashiniTranslating: false,
+        bhashiniError: err?.message || 'Translation network error',
+      });
+      return null;
     }
-    return null;
+  },
+
+  transliterateTextWithBhashini: async (text: string, sourceLang = 'en', targetLang = 'hi'): Promise<string | null> => {
+    if (!text || !text.trim()) return null;
+    set({ bhashiniTranslating: true, bhashiniError: null });
+    try {
+      console.log('[BHASHINI] transliteration request', {
+        text,
+        source_language: sourceLang,
+        target_language: targetLang,
+      });
+      const res = await fetch('/api/bhashini/transliterate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          source_language: sourceLang,
+          target_language: targetLang,
+        }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      console.log('[BHASHINI] transliteration response', { status: res.status, data });
+
+      if (res.ok && data.status === 'success' && data.transliterated_text) {
+        set({ bhashiniTranslating: false, bhashiniError: null });
+        return data.transliterated_text as string;
+      }
+
+      if (res.status === 503) {
+        const msg =
+          data.error ||
+          'BHASHINI credentials not configured (503 Service Unavailable).';
+        set({ bhashiniTranslating: false, bhashiniError: msg });
+        return null;
+      }
+
+      set({
+        bhashiniTranslating: false,
+        bhashiniError: data.error || data.detail || 'BHASHINI transliteration failed',
+      });
+      return null;
+    } catch (err: any) {
+      console.log('[BHASHINI] transliteration network error', err);
+      set({
+        bhashiniTranslating: false,
+        bhashiniError: err?.message || 'Transliteration network error',
+      });
+      return null;
+    }
   },
 }));
 
@@ -593,12 +911,12 @@ async function runMatchingAndResults(
     });
     if (res.ok) {
       const data = await res.json();
-      results = data.results || [];
+      results = normalizeMatchedResults(data.results || []);
     } else {
-      results = matchSchemes(profile, activeRawDataset as any, activeCategoryType);
+      results = normalizeMatchedResults(matchSchemes(profile, activeRawDataset as any, activeCategoryType));
     }
   } catch {
-    results = matchSchemes(profile, activeRawDataset as any, activeCategoryType);
+    results = normalizeMatchedResults(matchSchemes(profile, activeRawDataset as any, activeCategoryType));
   }
 
   // Pre-fetch explanation for the top matched scheme

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Lock, CheckCircle, AlertCircle, Phone, User, Sparkles, FileText, Shield } from 'lucide-react';
+import { ArrowRight, Lock, CheckCircle, AlertCircle, Phone, Mail, User, Sparkles, FileText, Shield } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 
@@ -7,8 +7,12 @@ export const SignupScreen: React.FC = () => {
   const { language, loginOrSignup, isLoading } = useAppStore();
   const t = translations[language];
 
+  const [mode, setMode] = useState<'signup' | 'login'>('signup');
+  const [rememberMe, setRememberMe] = useState(true);
+  const [authMethod, setAuthMethod] = useState<'mobile' | 'email'>('mobile');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -21,24 +25,37 @@ export const SignupScreen: React.FC = () => {
       return;
     }
 
-    // Normalize phone digits
-    const digits = phone.replace(/\D/g, '');
-    let cleanPhone = digits;
-    if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
-      cleanPhone = cleanPhone.slice(2);
-    } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
-      cleanPhone = cleanPhone.slice(1);
-    } else if (cleanPhone.length > 10) {
-      cleanPhone = cleanPhone.slice(-10);
-    }
+    let identifier = '';
 
-    if (cleanPhone.length !== 10) {
-      setValidationError(t.signup_error_phone);
-      return;
+    if (authMethod === 'mobile') {
+      // Normalize phone digits
+      const digits = phone.replace(/\D/g, '');
+      let cleanPhone = digits;
+      if (cleanPhone.length === 12 && cleanPhone.startsWith('91')) {
+        cleanPhone = cleanPhone.slice(2);
+      } else if (cleanPhone.length === 11 && cleanPhone.startsWith('0')) {
+        cleanPhone = cleanPhone.slice(1);
+      } else if (cleanPhone.length > 10) {
+        cleanPhone = cleanPhone.slice(-10);
+      }
+
+      if (cleanPhone.length !== 10) {
+        setValidationError(t.signup_error_phone);
+        return;
+      }
+      identifier = cleanPhone;
+    } else {
+      const cleanEmail = email.trim().toLowerCase();
+      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailPattern.test(cleanEmail)) {
+        setValidationError(language === 'hi' ? 'कृपया एक मान्य ईमेल पता दर्ज करें' : 'Please enter a valid email address');
+        return;
+      }
+      identifier = cleanEmail;
     }
 
     try {
-      await loginOrSignup(cleanName, cleanPhone);
+      await loginOrSignup(cleanName, identifier, authMethod, rememberMe);
     } catch (err: any) {
       setValidationError(err.message || 'Error continuing. Please check your connection.');
     }
@@ -49,9 +66,9 @@ export const SignupScreen: React.FC = () => {
       {/* Mobile-Only Header (< 900px) */}
       <div className="block min-[900px]:hidden mb-5 text-center">
         <div className="inline-flex items-center justify-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-0.5 shadow-2xs">
+          <div className="w-20 h-20 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-1 shadow-2xs">
             <img
-              src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+              src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
               alt="YojanaMatch logo"
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
@@ -76,9 +93,9 @@ export const SignupScreen: React.FC = () => {
         <div className="hidden min-[900px]:flex flex-col justify-between bg-white border border-[#004D40]/15 rounded-2xl shadow-xs p-6 sm:p-7 space-y-6">
           <div>
             {/* Logo Image */}
-            <div className="w-20 h-20 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-1 shadow-xs mb-4">
+            <div className="w-28 h-28 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-1.5 shadow-xs mb-4">
               <img
-                src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+                src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
                 alt="YojanaMatch logo"
                 className="w-full h-full object-contain"
                 referrerPolicy="no-referrer"
@@ -173,6 +190,27 @@ export const SignupScreen: React.FC = () => {
           )}
 
           {/* Form */}
+          <div className="flex bg-[#004D40]/5 rounded-xl p-1 border border-[#004D40]/10 mb-5">
+            <button
+              type="button"
+              onClick={() => setMode('signup')}
+              className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold cursor-pointer transition-all ${
+                mode === 'signup' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
+              }`}
+            >
+              {language === 'hi' ? 'नया खाता बनाएं' : 'Create Account'}
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('login')}
+              className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold cursor-pointer transition-all ${
+                mode === 'login' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
+              }`}
+            >
+              {language === 'hi' ? 'लॉग इन करें' : 'Log In'}
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
@@ -195,28 +233,89 @@ export const SignupScreen: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
-                {t.signup_phone_label} <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
-                  <Phone className="w-4 h-4" />
-                </div>
-                <div className="absolute inset-y-0 left-9 flex items-center pointer-events-none text-xs font-bold text-[#004D40]/60 pr-1">
-                  +91
-                </div>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder={t.signup_phone_placeholder}
-                  maxLength={14}
-                  className="w-full pl-18 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors tracking-wide"
-                  autoComplete="tel"
-                  required
-                />
+              {/* Auth Method Tab Toggle */}
+              <div className="flex bg-[#004D40]/5 rounded-xl p-1 border border-[#004D40]/10 mb-3">
+                <button
+                  type="button"
+                  onClick={() => { setAuthMethod('mobile'); setValidationError(null); }}
+                  className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    authMethod === 'mobile' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
+                  }`}
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? 'मोबाइल नंबर' : 'Mobile Number'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setAuthMethod('email'); setValidationError(null); }}
+                  className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all ${
+                    authMethod === 'email' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
+                  }`}
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? 'ईमेल' : 'Email'}</span>
+                </button>
               </div>
+
+              {authMethod === 'mobile' ? (
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
+                    {t.signup_phone_label} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
+                      <Phone className="w-4 h-4" />
+                    </div>
+                    <div className="absolute inset-y-0 left-9 flex items-center pointer-events-none text-xs font-bold text-[#004D40]/60 pr-1">
+                      +91
+                    </div>
+                    <input
+                      type="tel"
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      placeholder={t.signup_phone_placeholder}
+                      maxLength={14}
+                      className="w-full pl-18 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors tracking-wide"
+                      autoComplete="tel"
+                      required
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
+                    {language === 'hi' ? 'ईमेल पता' : 'Email Address'} <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
+                      <Mail className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder={language === 'hi' ? 'aapka.email@example.com' : 'your.email@example.com'}
+                      className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors"
+                      autoComplete="email"
+                      required
+                    />
+                  </div>
+                </div>
+              )}
             </div>
+
+            {/* Remember Me Checkbox */}
+            <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-[#004D40]/30 text-[#FF6B35] focus:ring-[#FF6B35]/30 cursor-pointer"
+              />
+              <span className="text-xs sm:text-sm text-[#004D40]/80 font-medium">
+                {language === 'hi' ? 'मुझे याद रखें' : 'Remember me'}
+              </span>
+            </label>
 
             {/* Continue Action Button */}
             <button

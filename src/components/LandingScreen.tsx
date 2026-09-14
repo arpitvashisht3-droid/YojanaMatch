@@ -11,7 +11,13 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
-import { startSpeechRecognition, stopSpeechRecognition, isSpeechRecognitionSupported } from '../lib/speechService';
+import {
+  startSpeechRecognition,
+  stopSpeechRecognition,
+  isSpeechRecognitionSupported,
+  getSpeechRecognitionErrorMessage,
+  type SpeechRecognitionErrorCode,
+} from '../lib/speechService';
 import {
   NewThisMonthSidebar,
   PopularInStateSidebar,
@@ -24,6 +30,8 @@ import { DidYouKnowBanner } from './DidYouKnowBanner';
 export const LandingScreen: React.FC = () => {
   const {
     language,
+    speechLanguage,
+    setSpeechLanguage,
     contentMode,
     inputText,
     setInputText,
@@ -33,52 +41,106 @@ export const LandingScreen: React.FC = () => {
     isLoading,
     recommendationsLayout,
     setRecommendationsLayout,
+    markVoiceInputSource,
+    clearVoiceInputSource,
+    error,
   } = useAppStore();
   const t = translations[language];
 
   const [voiceAvailable, setVoiceAvailable] = useState<boolean>(true);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
   const stopRecordingRef = useRef<(() => void) | null>(null);
+  const speechBaseRef = useRef<string>('');
+  const inputTextRef = useRef<string>(inputText);
+
+  useEffect(() => {
+    inputTextRef.current = inputText;
+  }, [inputText]);
 
   useEffect(() => {
     setVoiceAvailable(isSpeechRecognitionSupported());
-  }, []);
-
-  const handleToggleVoice = () => {
-    if (isListening) {
+    return () => {
       if (stopRecordingRef.current) {
         stopRecordingRef.current();
+        stopRecordingRef.current = null;
       }
       stopSpeechRecognition();
       setIsListening(false);
-    } else {
-      setIsListening(true);
-      const stopFn = startSpeechRecognition(
-        language,
-        (transcript, _isFinal) => {
-          setInputText(transcript);
-        },
-        () => {
-          setIsListening(false);
-        },
-        () => {
-          setIsListening(false);
-        }
-      );
-      stopRecordingRef.current = stopFn;
+    };
+  }, [setIsListening]);
+
+  const stopVoiceInput = () => {
+    if (stopRecordingRef.current) {
+      stopRecordingRef.current();
+      stopRecordingRef.current = null;
     }
+    stopSpeechRecognition();
+    setIsListening(false);
+  };
+
+  const handleToggleVoice = () => {
+    if (isListening) {
+      stopVoiceInput();
+      return;
+    }
+
+    if (!isSpeechRecognitionSupported()) {
+      setVoiceAvailable(false);
+      setVoiceError(getSpeechRecognitionErrorMessage('unsupported', language));
+      return;
+    }
+
+    setVoiceError(null);
+    const existing = inputTextRef.current.trim();
+    speechBaseRef.current = existing ? `${existing} ` : '';
+    const recognitionLang = speechLanguage === 'hi' ? 'hi-IN' : 'en-IN';
+    // Speech language is an explicit user choice — independent of UI language.
+    // Web Speech API does not detect/translate spoken language; it only STT for recognition.lang.
+    console.log('[VOICE] UI language:', language);
+    console.log('[VOICE] speech language:', speechLanguage);
+    console.log('[VOICE] recognition.lang:', recognitionLang);
+    markVoiceInputSource(speechLanguage);
+    setIsListening(true);
+
+    const stopFn = startSpeechRecognition(
+      speechLanguage,
+      (transcript) => {
+        const next = `${speechBaseRef.current}${transcript}`.replace(/\s+/g, ' ').trim();
+        console.log('[VOICE] raw transcript:', transcript);
+        console.log('[VOICE] processing as:', speechLanguage === 'hi' ? 'Hindi voice pipeline' : 'English voice pipeline');
+        setInputText(next);
+        markVoiceInputSource(speechLanguage);
+      },
+      (code?: SpeechRecognitionErrorCode, message?: string) => {
+        setIsListening(false);
+        stopRecordingRef.current = null;
+        if (code && code !== 'aborted') {
+          setVoiceError(message || getSpeechRecognitionErrorMessage(code, language));
+        }
+      },
+      () => {
+        setIsListening(false);
+        stopRecordingRef.current = null;
+      }
+    );
+    stopRecordingRef.current = stopFn;
   };
 
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isListening) {
-      stopSpeechRecognition();
-      setIsListening(false);
+      stopVoiceInput();
     }
+    setVoiceError(null);
     if (inputText.trim()) {
+      console.log('[VOICE] UI language:', language);
+      console.log('[VOICE] speech language:', useAppStore.getState().voiceSourceLanguage ?? speechLanguage);
+      console.log('[VOICE] raw transcript:', inputText.trim());
       startDiscovery();
     } else {
       const sample = activeSamples[0];
       if (sample) {
+        clearVoiceInputSource();
         setInputText(sample);
         startDiscovery(sample);
       }
@@ -86,6 +148,7 @@ export const LandingScreen: React.FC = () => {
   };
 
   const handleSampleClick = (sampleText: string) => {
+    clearVoiceInputSource();
     setInputText(sampleText);
     startDiscovery(sampleText);
   };
@@ -113,21 +176,28 @@ export const LandingScreen: React.FC = () => {
             id="situation-input"
             rows={4}
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={(e) => {
+              setInputText(e.target.value);
+              clearVoiceInputSource();
+              if (voiceError) setVoiceError(null);
+            }}
             placeholder={activePlaceholder}
             className="w-full text-base sm:text-lg p-4 rounded-xl border border-[#004D40]/15 focus:border-[#FF6B35] focus:ring-0 text-[#004D40] placeholder:text-[#004D40]/40 resize-none bg-[#FAFAF7]/50 font-normal transition-colors"
           />
 
-          {/* Microphone Button */}
-          {voiceAvailable && (
-            <div className="flex items-center justify-between mt-3 pt-3 border-t border-[#004D40]/10">
+          {/* Microphone + independent speech-language selector */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-3 pt-3 border-t border-[#004D40]/10">
+            <div className="flex flex-wrap items-center gap-2.5">
               <button
                 type="button"
                 onClick={handleToggleVoice}
+                disabled={!voiceAvailable && !isListening}
                 className={`touch-target flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold transition-all cursor-pointer ${
                   isListening
                     ? 'bg-red-500 text-white animate-pulse shadow-sm'
-                    : 'bg-[#004D40]/5 text-[#004D40] hover:bg-[#FF6B35] hover:text-white'
+                    : voiceAvailable
+                      ? 'bg-[#004D40]/5 text-[#004D40] hover:bg-[#FF6B35] hover:text-white'
+                      : 'bg-[#004D40]/5 text-[#004D40]/40 cursor-not-allowed'
                 }`}
                 aria-label={isListening ? t.mic_stop : t.mic_start}
               >
@@ -144,10 +214,53 @@ export const LandingScreen: React.FC = () => {
                 )}
               </button>
 
-              <span className="text-xs text-[#004D40]/60 font-medium">
-                {isListening ? (language === 'hi' ? 'बोलते रहें...' : 'Transcribing live...') : (language === 'hi' ? 'आवाज से लिखें' : 'Voice input ready')}
-              </span>
+              <div
+                className="inline-flex items-center rounded-lg border border-[#004D40]/15 bg-[#FAFAF7] p-0.5"
+                role="group"
+                aria-label={language === 'hi' ? 'बोलने की भाषा' : 'Speech language'}
+              >
+                <button
+                  type="button"
+                  disabled={isListening}
+                  onClick={() => setSpeechLanguage('en')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                    speechLanguage === 'en'
+                      ? 'bg-white text-[#004D40] shadow-sm'
+                      : 'text-[#004D40]/55 hover:text-[#004D40]'
+                  }`}
+                >
+                  Speak in English
+                </button>
+                <button
+                  type="button"
+                  disabled={isListening}
+                  onClick={() => setSpeechLanguage('hi')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer disabled:cursor-not-allowed ${
+                    speechLanguage === 'hi'
+                      ? 'bg-white text-[#004D40] shadow-sm'
+                      : 'text-[#004D40]/55 hover:text-[#004D40]'
+                  }`}
+                >
+                  हिंदी में बोलें
+                </button>
+              </div>
             </div>
+
+            <span className="text-xs text-[#004D40]/60 font-medium">
+              {isListening
+                ? speechLanguage === 'hi'
+                  ? (language === 'hi' ? 'हिंदी में बोलते रहें…' : 'Listening in Hindi…')
+                  : (language === 'hi' ? 'अंग्रेज़ी में बोलते रहें…' : 'Listening in English…')
+                : voiceAvailable
+                  ? (language === 'hi' ? 'आवाज से लिखें' : 'Voice input ready')
+                  : (language === 'hi' ? 'वॉइस समर्थित नहीं' : 'Voice unsupported')}
+            </span>
+          </div>
+
+          {(voiceError || error) && (
+            <p className="mt-2 text-xs font-medium text-red-600" role="alert">
+              {voiceError || error}
+            </p>
           )}
         </div>
 
@@ -266,8 +379,6 @@ export const LandingScreen: React.FC = () => {
   if (recommendationsLayout === '3column') {
     return (
       <div className="w-full max-w-[1440px] mx-auto px-3 sm:px-6 lg:px-8 py-5">
-        {renderLayoutSwitcher()}
-
         {/* 3-Column CSS Grid on >=900px, 1-Column on <900px */}
         <div className="grid grid-cols-1 min-[900px]:grid-cols-[280px_minmax(0,1fr)_320px] gap-6 items-start">
           {/* LEFT SIDEBAR COLUMN: "New this month" auto-fits content */}
@@ -338,8 +449,6 @@ export const LandingScreen: React.FC = () => {
   // =========================================================================
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-8 sm:py-12">
-      {renderLayoutSwitcher()}
-
       {/* Hero Header */}
       <div className="text-center mb-8 sm:mb-10">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#004D40]/5 border border-[#004D40]/10 text-[#004D40] text-xs font-bold uppercase tracking-wider mb-4">

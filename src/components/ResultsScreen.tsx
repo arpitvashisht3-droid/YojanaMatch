@@ -15,7 +15,7 @@ import {
   Languages,
   Bookmark,
 } from 'lucide-react';
-import { useAppStore } from '../store/useAppStore';
+import { getCanonicalSchemeId, useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 import { speakText, stopSpeaking } from '../lib/speechService';
 import { KaraokeExplanation } from './KaraokeExplanation';
@@ -301,17 +301,17 @@ export const ResultsScreen: React.FC = () => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        toggleSaveScheme(scheme.id);
+                        toggleSaveScheme(getCanonicalSchemeId(scheme));
                       }}
                       className={`touch-target p-2.5 rounded-full transition-all cursor-pointer ${
-                        isSchemeSaved(scheme.id)
+                        isSchemeSaved(getCanonicalSchemeId(scheme))
                           ? 'bg-[#FF6B35] text-white shadow-xs'
                           : 'bg-[#004D40]/5 hover:bg-[#FF6B35]/15 text-[#004D40] hover:text-[#FF6B35]'
                       }`}
-                      aria-label={isSchemeSaved(scheme.id) ? t.btn_saved_scheme : t.btn_save_scheme}
-                      title={isSchemeSaved(scheme.id) ? t.btn_saved_scheme : t.btn_save_scheme}
+                      aria-label={isSchemeSaved(getCanonicalSchemeId(scheme)) ? t.btn_saved_scheme : t.btn_save_scheme}
+                      title={isSchemeSaved(getCanonicalSchemeId(scheme)) ? t.btn_saved_scheme : t.btn_save_scheme}
                     >
-                      <Bookmark className={`w-4 h-4 ${isSchemeSaved(scheme.id) ? 'fill-current' : ''}`} />
+                      <Bookmark className={`w-4 h-4 ${isSchemeSaved(getCanonicalSchemeId(scheme)) ? 'fill-current' : ''}`} />
                     </button>
 
                     {!isTtsHidden && (
@@ -500,15 +500,15 @@ export const ResultsScreen: React.FC = () => {
                     <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
                       <button
                         type="button"
-                        onClick={() => toggleSaveScheme(scheme.id)}
+                        onClick={() => toggleSaveScheme(getCanonicalSchemeId(scheme))}
                         className={`touch-target w-full sm:w-auto px-5 py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer border ${
-                          isSchemeSaved(scheme.id)
+                          isSchemeSaved(getCanonicalSchemeId(scheme))
                             ? 'bg-[#FF6B35] text-white border-[#FF6B35] shadow-xs'
                             : 'bg-white text-[#004D40] border-[#004D40]/20 hover:border-[#FF6B35] hover:text-[#FF6B35]'
                         }`}
                       >
-                        <Bookmark className={`w-4 h-4 ${isSchemeSaved(scheme.id) ? 'fill-current' : ''}`} />
-                        <span>{isSchemeSaved(scheme.id) ? t.btn_saved_scheme : t.btn_save_scheme}</span>
+                        <Bookmark className={`w-4 h-4 ${isSchemeSaved(getCanonicalSchemeId(scheme)) ? 'fill-current' : ''}`} />
+                        <span>{isSchemeSaved(getCanonicalSchemeId(scheme)) ? t.btn_saved_scheme : t.btn_save_scheme}</span>
                       </button>
 
                       <a

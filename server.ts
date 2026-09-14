@@ -19,6 +19,7 @@ import {
 } from "./src/server/authHelper.js";
 import {
   translateText,
+  transliterateText,
   isBhashiniConfigured,
 } from "./src/server/bhashiniService.js";
 import { DataIngestionService } from "./src/server/dataIngestionService.js";
@@ -729,6 +730,37 @@ app.post("/api/bhashini/translate", async (req: Request, res: Response) => {
   return res.json(result);
 });
 
+// POST /api/bhashini/transliterate - Roman Indic → native script (IndicXlit)
+app.post("/api/bhashini/transliterate", async (req: Request, res: Response) => {
+  const { text, source_language, target_language } = req.body || {};
+
+  if (!text || !text.trim()) {
+    return res.status(400).json({ error: "Field 'text' is required and cannot be empty." });
+  }
+
+  if (!isBhashiniConfigured()) {
+    return res.status(503).json({
+      transliterated_text: null,
+      source_language: source_language || "en",
+      target_language: target_language || "hi",
+      status: "error",
+      error: "BHASHINI API credentials not configured. Please set BHASHINI_UDYAT_KEY and BHASHINI_INFERENCE_KEY in environment.",
+    });
+  }
+
+  const result = await transliterateText(
+    text,
+    source_language || "en",
+    target_language || "hi"
+  );
+
+  if (result.status !== "success") {
+    return res.status(502).json(result);
+  }
+
+  return res.json(result);
+});
+
 // Heuristic Fallback Profile Extractor
 function extractHeuristicProfile(text: string, mode: string = "schemes"): UserProfile {
   const lower = text.toLowerCase();
@@ -839,6 +871,7 @@ async function startServer() {
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`YojanaMatch Unified Server running on http://0.0.0.0:${PORT}`);
     console.log(`BHASHINI translation service endpoint: http://0.0.0.0:${PORT}/api/bhashini/translate`);
+    console.log(`BHASHINI transliteration service endpoint: http://0.0.0.0:${PORT}/api/bhashini/transliterate`);
   });
 }
 

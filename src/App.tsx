@@ -8,6 +8,7 @@ import { AboutScreen } from './components/AboutScreen';
 import { SignupScreen } from './components/SignupScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { ProfileScreen } from './components/ProfileScreen';
+import { SavedSchemesScreen } from './components/SavedSchemesScreen';
 import { useAppStore } from './store/useAppStore';
 
 export default function App() {
@@ -64,6 +65,7 @@ export default function App() {
             {effectiveScreen === 'results' && <ResultsScreen />}
             {effectiveScreen === 'about' && <AboutScreen />}
             {effectiveScreen === 'profile' && <ProfileScreen />}
+            {effectiveScreen === 'saved' && <SavedSchemesScreen />}
           </>
         )}
       </main>

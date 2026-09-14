@@ -1,85 +1,208 @@
 /**
  * Speech Service: Handles Speech-to-Text (Voice Input) and Text-to-Speech (Playback)
- * with robust silent fallbacks and full Hindi / English support.
+ * using the browser Web Speech API (NOT BHASHINI ASR).
  */
+
+export type SpeechRecognitionErrorCode =
+  | 'not-allowed'
+  | 'service-not-allowed'
+  | 'network'
+  | 'no-speech'
+  | 'aborted'
+  | 'audio-capture'
+  | 'bad-grammar'
+  | 'language-not-supported'
+  | 'unsupported'
+  | 'unknown';
 
 // Speech Recognition instance
 let recognitionInstance: any = null;
+let intentionalStop = false;
 
 export function isSpeechRecognitionSupported(): boolean {
   if (typeof window === 'undefined') return false;
   return 'SpeechRecognition' in window || 'webkitSpeechRecognition' in window;
 }
 
+export function getSpeechRecognitionErrorMessage(
+  code: SpeechRecognitionErrorCode,
+  language: 'en' | 'hi' = 'en'
+): string {
+  const hi = language === 'hi';
+  switch (code) {
+    case 'not-allowed':
+      return hi
+        ? 'माइक्रोफ़ोन की अनुमति नहीं मिली। ब्राउज़र सेटिंग में माइक अनुमति दें।'
+        : 'Microphone permission denied. Allow mic access in your browser settings.';
+    case 'service-not-allowed':
+      return hi
+        ? 'इस ब्राउज़र/संदर्भ में वॉइस पहचान अवरुद्ध है। Chrome/Edge (HTTPS) आज़माएँ या टाइप करें।'
+        : 'Speech recognition is blocked in this browser/context. Try Chrome/Edge over HTTPS, or type your query.';
+    case 'network':
+      return hi
+        ? 'वॉइस पहचान नेटवर्क त्रुटि। इंटरनेट जांचें और फिर कोशिश करें।'
+        : 'Speech recognition network error. Check your internet connection and try again.';
+    case 'no-speech':
+      return hi
+        ? 'कोई आवाज़ नहीं सुनाई दी। माइक दबाकर फिर से बोलें।'
+        : 'No speech detected. Click the mic and try speaking again.';
+    case 'audio-capture':
+      return hi
+        ? 'माइक्रोफ़ोन नहीं मिला। डिवाइस कनेक्ट करके फिर कोशिश करें।'
+        : 'No microphone found. Connect a mic and try again.';
+    case 'language-not-supported':
+      return hi
+        ? 'यह भाषा वॉइस पहचान के लिए समर्थित नहीं है।'
+        : 'This language is not supported for speech recognition.';
+    case 'unsupported':
+      return hi
+        ? 'इस ब्राउज़र में वॉइस इनपुट समर्थित नहीं है। कृपया टाइप करें।'
+        : 'Voice input is not supported in this browser. Please type your query.';
+    case 'aborted':
+      return hi ? 'वॉइस इनपुट रोक दिया गया।' : 'Voice input was stopped.';
+    default:
+      return hi
+        ? 'वॉइस पहचान विफल रही। कृपया फिर कोशिश करें या टाइप करें।'
+        : 'Speech recognition failed. Please try again or type your query.';
+  }
+}
+
+function normalizeErrorCode(raw: unknown): SpeechRecognitionErrorCode {
+  const code = String(raw || 'unknown');
+  const allowed: SpeechRecognitionErrorCode[] = [
+    'not-allowed',
+    'service-not-allowed',
+    'network',
+    'no-speech',
+    'aborted',
+    'audio-capture',
+    'bad-grammar',
+    'language-not-supported',
+    'unsupported',
+    'unknown',
+  ];
+  return (allowed.includes(code as SpeechRecognitionErrorCode)
+    ? code
+    : 'unknown') as SpeechRecognitionErrorCode;
+}
+
+function forceStopRecognitionInstance(): void {
+  if (!recognitionInstance) return;
+  const active = recognitionInstance;
+  try {
+    active.onresult = null;
+    active.onerror = null;
+    active.onend = null;
+    active.stop();
+  } catch {
+    // Ignored
+  }
+  try {
+    active.abort?.();
+  } catch {
+    // Ignored
+  }
+  recognitionInstance = null;
+}
+
 export function startSpeechRecognition(
   language: 'en' | 'hi',
   onResult: (transcript: string, isFinal: boolean) => void,
-  onError?: () => void,
+  onError?: (code?: SpeechRecognitionErrorCode, message?: string) => void,
   onEnd?: () => void
 ): () => void {
   if (!isSpeechRecognitionSupported()) {
-    if (onError) onError();
+    const code: SpeechRecognitionErrorCode = 'unsupported';
+    if (onError) onError(code, getSpeechRecognitionErrorMessage(code, language));
     return () => {};
   }
 
+  // Ensure any previous session is fully cleared before starting a new one.
+  intentionalStop = true;
+  forceStopRecognitionInstance();
+  intentionalStop = false;
+
   try {
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    const recognition = new SpeechRecognition();
+    const SpeechRecognitionCtor =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const recognition = new SpeechRecognitionCtor();
     recognitionInstance = recognition;
 
     recognition.continuous = true;
-    recognition.interimResults = true;
+    // For Hindi speech mode, prefer final results: Chrome often emits Romanized interim
+    // and (when available) Devanagari finals. English keeps live interim feedback.
+    recognition.interimResults = language !== 'hi';
     recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+    recognition.maxAlternatives = 1;
+
+    console.log('[VOICE] recognition.lang:', recognition.lang);
+
+    let finalTranscript = '';
+    let endedCleanly = false;
 
     recognition.onresult = (event: any) => {
-      let fullTranscript = '';
-      let isFinal = false;
-
-      for (let i = 0; i < event.results.length; ++i) {
-        const item = event.results[i];
-        fullTranscript += item[0].transcript;
-        if (item.isFinal) {
-          isFinal = true;
+      let interimTranscript = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const result = event.results[i];
+        const piece = result?.[0]?.transcript || '';
+        if (result.isFinal) {
+          finalTranscript += piece;
+        } else {
+          interimTranscript += piece;
         }
       }
 
-      onResult(fullTranscript, isFinal);
+      const combined = `${finalTranscript}${interimTranscript}`.replace(/\s+/g, ' ').trim();
+      if (combined) {
+        console.log('[VOICE] raw transcript:', combined);
+        onResult(combined, interimTranscript.length === 0);
+      }
     };
 
     recognition.onerror = (e: any) => {
-      console.warn('Speech recognition silent error handled:', e);
-      if (onError) onError();
+      const code = normalizeErrorCode(e?.error);
+      // User/manual stop should not surface as a failure.
+      if (code === 'aborted' && intentionalStop) {
+        return;
+      }
+      console.warn('Speech recognition error:', code, e);
+      if (onError) onError(code, getSpeechRecognitionErrorMessage(code, language));
     };
 
     recognition.onend = () => {
+      if (recognitionInstance === recognition) {
+        recognitionInstance = null;
+      }
+      if (endedCleanly) return;
+      endedCleanly = true;
       if (onEnd) onEnd();
     };
 
     recognition.start();
 
     return () => {
+      intentionalStop = true;
+      endedCleanly = false;
       try {
         recognition.stop();
-      } catch (e) {
+      } catch {
         // Ignored
+      }
+      if (recognitionInstance === recognition) {
+        recognitionInstance = null;
       }
     };
   } catch (err) {
-    console.warn('Speech recognition initiation failed, silently falling back to text:', err);
-    if (onError) onError();
+    console.warn('Speech recognition initiation failed:', err);
+    const code: SpeechRecognitionErrorCode = 'unknown';
+    if (onError) onError(code, getSpeechRecognitionErrorMessage(code, language));
     return () => {};
   }
 }
 
 export function stopSpeechRecognition(): void {
-  if (recognitionInstance) {
-    try {
-      recognitionInstance.stop();
-    } catch (e) {
-      // Ignored
-    }
-    recognitionInstance = null;
-  }
+  intentionalStop = true;
+  forceStopRecognitionInstance();
 }
 
 // Text-to-Speech (TTS)

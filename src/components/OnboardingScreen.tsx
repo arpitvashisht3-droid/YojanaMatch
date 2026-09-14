@@ -13,12 +13,28 @@ import {
   Navigation,
   ExternalLink,
   ShieldCheck,
-  Edit2
+  Edit2,
+  Volume2,
+  VolumeX,
+  Trophy,
+  Tags,
+  UsersRound,
+  HeartHandshake,
+  Accessibility,
+  Scissors,
+  Milk,
+  Store,
+  UtensilsCrossed,
+  ShoppingBag,
+  Palette,
+  Factory,
+  Wallet
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 import { INDIAN_STATES_AND_UTS, userRecordToProfile } from '../lib/userProfileHelper';
-import { startSpeechRecognition, isSpeechRecognitionSupported } from '../lib/speechService';
+import { startSpeechRecognition, stopSpeechRecognition, isSpeechRecognitionSupported, speakText, stopSpeaking, getSpeechRecognitionErrorMessage } from '../lib/speechService';
+import { KaraokeExplanation } from './KaraokeExplanation';
 import { matchSchemes } from '../lib/matchingEngine';
 import schemesData from '../data/schemes.json';
 import { CasteCategory, DistrictType, BusinessType, Gender, UserRecord, MatchedSchemeResult } from '../types';
@@ -46,6 +62,12 @@ export const OnboardingScreen: React.FC = () => {
   // Voice recording state
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [stopVoiceFn, setStopVoiceFn] = useState<(() => void) | null>(null);
+  const [voiceError, setVoiceError] = useState<string | null>(null);
+
+  // Step read-aloud (TTS) state
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [activeWordIndex, setActiveWordIndex] = useState<number | null>(null);
+  const [highlightMode, setHighlightMode] = useState<'word' | 'paragraph'>('word');
 
   // GPS state
   const [isLocating, setIsLocating] = useState(false);
@@ -75,6 +97,7 @@ export const OnboardingScreen: React.FC = () => {
   useEffect(() => {
     return () => {
       if (stopVoiceFn) stopVoiceFn();
+      stopSpeechRecognition();
     };
   }, [stopVoiceFn]);
 
@@ -114,16 +137,21 @@ export const OnboardingScreen: React.FC = () => {
   };
 
   // Voice Input Toggle
-  const toggleVoiceInput = (targetField: 'name' | 'biz') => {
+  const toggleVoiceInput = (targetField: 'name' | 'biz' | 'state') => {
     if (isVoiceActive) {
       if (stopVoiceFn) stopVoiceFn();
+      stopSpeechRecognition();
       setIsVoiceActive(false);
       setStopVoiceFn(null);
       return;
     }
 
-    if (!isSpeechRecognitionSupported()) return;
+    if (!isSpeechRecognitionSupported()) {
+      setVoiceError(getSpeechRecognitionErrorMessage('unsupported', language));
+      return;
+    }
 
+    setVoiceError(null);
     setIsVoiceActive(true);
     const stop = startSpeechRecognition(
       language,
@@ -132,10 +160,27 @@ export const OnboardingScreen: React.FC = () => {
           setName(transcript);
         } else if (targetField === 'biz') {
           setCustomBizType(transcript);
+        } else if (targetField === 'state') {
+          const matchedState = INDIAN_STATES_AND_UTS.find((s) =>
+            s.toLowerCase().includes(transcript.toLowerCase()) ||
+            transcript.toLowerCase().includes(s.toLowerCase())
+          );
+          if (matchedState) {
+            setStateName(matchedState);
+          }
         }
       },
-      () => setIsVoiceActive(false),
-      () => setIsVoiceActive(false)
+      (code) => {
+        setIsVoiceActive(false);
+        setStopVoiceFn(null);
+        if (code && code !== 'aborted') {
+          setVoiceError(getSpeechRecognitionErrorMessage(code, language));
+        }
+      },
+      () => {
+        setIsVoiceActive(false);
+        setStopVoiceFn(null);
+      }
     );
     setStopVoiceFn(() => stop);
   };
@@ -213,12 +258,62 @@ export const OnboardingScreen: React.FC = () => {
     income_range: incomeRange,
   }), [name, user, ageRange, gender, categories, stateName, districtType, bizSituation, bizType, customBizType, bizAge, incomeRange]);
 
-  // Calculate instant matched schemes on Step 7
+  // Live matching, recomputed whenever any onboarding field changes, so the sidebar
+  // can show a running "X of Y schemes match so far" count across every step.
+  const liveMatches: MatchedSchemeResult[] = useMemo(() => {
+    const profile = userRecordToProfile(currentTempUserRecord);
+    return matchSchemes(profile, schemesData as any);
+  }, [currentTempUserRecord]);
+
+  const totalSchemesCount = (schemesData as any[]).length;
+
+  // Calculate instant matched schemes preview on Step 7 (top 3, reusing liveMatches)
   const instantMatches: MatchedSchemeResult[] = useMemo(() => {
     if (step !== 7) return [];
-    const profile = userRecordToProfile(currentTempUserRecord);
-    return matchSchemes(profile, schemesData as any).slice(0, 3);
-  }, [step, currentTempUserRecord]);
+    return liveMatches.slice(0, 3);
+  }, [step, liveMatches]);
+
+  // Confidence meter: how many key profile signals are filled in so far (out of 5)
+  const filledSignalsCount = useMemo(() => {
+    let count = 0;
+    if (ageRange) count++;
+    if (gender) count++;
+    if (categories.length > 0) count++;
+    if (stateName) count++;
+    if (bizType || incomeRange) count++;
+    return count;
+  }, [ageRange, gender, categories, stateName, bizType, incomeRange]);
+
+  // Count of schemes applicable to the selected state (or nationwide schemes)
+  const stateSchemeCount = useMemo(() => {
+    if (!stateName) return 0;
+    return (schemesData as any[]).filter((s) => {
+      const states: string[] = s.applicable_states || [];
+      return states.length === 0 || states.includes('All India') || states.includes('All') || states.includes(stateName);
+    }).length;
+  }, [stateName]);
+
+  // Icon lookup maps for category chips and business-type illustration
+  const catIconMap: Record<string, React.ElementType> = {
+    SC: UsersRound,
+    ST: UsersRound,
+    OBC: UsersRound,
+    Minority: UsersRound,
+    Woman: HeartHandshake,
+    'Person with Disability': Accessibility,
+    General: User,
+  };
+
+  const bizIconMap: Record<string, React.ElementType> = {
+    textile_weaving: Scissors,
+    dairy_livestock: Milk,
+    retail_shop: Store,
+    food_processing: UtensilsCrossed,
+    street_vendor: ShoppingBag,
+    artisan_handicraft: Palette,
+    services: Briefcase,
+    manufacturing: Factory,
+  };
 
   // Finish Onboarding & Go to Home
   const handleCompleteOnboarding = async () => {
@@ -236,44 +331,76 @@ export const OnboardingScreen: React.FC = () => {
     { num: 7, title: language === 'hi' ? 'पात्रता मिलान' : 'Match Preview', subtitle: language === 'hi' ? 'सत्यापित योजनाएं' : 'Matched schemes' },
   ];
 
+  // Compose the current step's heading + message for read-aloud playback
+  const getCurrentStepSpeechText = (): string => {
+    switch (step) {
+      case 1: return t.step1_message;
+      case 2: return t.step2_message;
+      case 3: return t.step3_message;
+      case 4: return t.step4_message;
+      case 5: return t.step5_message;
+      case 6: return t.step6_message;
+      case 7: return t.step7_message;
+      default: return '';
+    }
+  };
+
+  // Toggle read-aloud playback for the current step's question
+  const handleToggleStepSpeech = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+      setIsSpeaking(false);
+      setActiveWordIndex(null);
+      setHighlightMode('word');
+      return;
+    }
+    const textToSpeak = getCurrentStepSpeechText();
+    if (!textToSpeak.trim()) return;
+    setIsSpeaking(true);
+    setHighlightMode('word');
+    speakText({
+      text: textToSpeak,
+      language,
+      onEnd: () => {
+        setIsSpeaking(false);
+        setActiveWordIndex(null);
+      },
+      onError: () => {
+        setIsSpeaking(false);
+        setActiveWordIndex(null);
+      },
+      onWord: (info) => {
+        setActiveWordIndex(info.wordIndex >= 0 ? info.wordIndex : null);
+      },
+      onDegradeToParagraph: () => {
+        setHighlightMode('paragraph');
+      },
+    });
+  };
+
+  // Stop any ongoing read-aloud playback when the step changes or component unmounts
+  useEffect(() => {
+    stopSpeaking();
+    setIsSpeaking(false);
+    setActiveWordIndex(null);
+    setHighlightMode('word');
+    return () => {
+      stopSpeaking();
+    };
+  }, [step]);
+
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8">
-      {/* Mobile-Only Header (< 900px) */}
-      <div className="block min-[900px]:hidden mb-4">
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg overflow-hidden bg-white border border-[#004D40]/10 p-0.5 shadow-2xs shrink-0">
-              <img
-                src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
-                alt="YojanaMatch logo"
-                className="w-full h-full object-contain"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <span className="text-base font-extrabold text-[#004D40]">YojanaMatch</span>
-          </div>
-          <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-[#004D40]/10 text-[#004D40]">
-            {t.onboarding_progress.replace('{current}', String(step)).replace('{total}', '7')}
-          </span>
-        </div>
-        <div className="w-full h-1.5 bg-[#004D40]/10 rounded-full overflow-hidden">
-          <div
-            className="h-full bg-[#FF6B35] transition-all duration-300 rounded-full"
-            style={{ width: `${(step / 7) * 100}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Two-Column 30/70 Responsive Grid */}
-      <div className="grid grid-cols-1 min-[900px]:grid-cols-[30%_1fr] gap-6 sm:gap-8 items-start">
-        {/* Left Column (30% width on Desktop/Tablet >= 900px, Sticky) */}
-        <aside className="hidden min-[900px]:block w-full sticky top-20 self-start">
+      {/* Two-Column 30/70 Sidebar Layout (always visible, no mobile collapse) */}
+      <div className="grid grid-cols-1 min-[1100px]:grid-cols-[260px_minmax(0,1fr)_300px] gap-6 sm:gap-8 items-start">
+        {/* Left Column (always visible, sticky) */}
+        <aside className="block w-full sticky top-20 self-start">
           <div className="bg-white rounded-2xl border border-[#004D40]/15 shadow-xs p-5 sm:p-6 space-y-5">
             {/* Brand Logo & Wordmark */}
             <div className="flex items-center gap-3 pb-4 border-b border-[#004D40]/10">
-              <div className="w-12 h-12 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-0.5 shadow-2xs shrink-0">
+              <div className="w-28 h-28 rounded-xl overflow-hidden bg-white border border-[#004D40]/10 p-2 shadow-2xs shrink-0">
                 <img
-                  src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+                  src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
                   alt="YojanaMatch logo"
                   className="w-full h-full object-contain"
                   referrerPolicy="no-referrer"
@@ -350,13 +477,31 @@ export const OnboardingScreen: React.FC = () => {
         {/* Right Column (70% width): Interactive Content */}
         <div className="w-full">
           {/* Main Step Container */}
-          <div className="bg-white border border-[#004D40]/15 rounded-2xl shadow-xs p-6 sm:p-8">
+          <div className="bg-white border border-[#004D40]/15 rounded-2xl shadow-xs p-6 sm:p-8 relative">
+            {/* Read-aloud toggle for the current step's question */}
+            <button
+              type="button"
+              onClick={handleToggleStepSpeech}
+              className={`absolute top-4 right-4 sm:top-6 sm:right-6 p-2.5 rounded-full border cursor-pointer z-10 ${
+                isSpeaking
+                  ? 'bg-[#FF6B35]/10 border-[#FF6B35] text-[#FF6B35] animate-pulse'
+                  : 'bg-white border-[#004D40]/20 text-[#004D40]/60 hover:bg-[#004D40]/5'
+              }`}
+              title={isSpeaking ? (language === 'hi' ? 'रोकें' : 'Stop reading') : (language === 'hi' ? 'सुनें' : 'Read aloud')}
+            >
+              {isSpeaking ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+            </button>
+            {voiceError && (
+              <p className="mb-4 text-xs font-medium text-red-600" role="alert">
+                {voiceError}
+              </p>
+            )}
             {/* ================= STEP 1: WELCOME ================= */}
             {step === 1 && (
               <div className="text-center py-4 sm:py-6">
-                <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-1 shadow-xs mx-auto mb-5">
+                <div className="w-32 h-32 rounded-2xl overflow-hidden bg-white border border-[#004D40]/10 p-2 shadow-xs mx-auto mb-5">
                   <img
-                    src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+                    src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
                     alt="YojanaMatch logo"
                     className="w-full h-full object-contain"
                     referrerPolicy="no-referrer"
@@ -365,9 +510,14 @@ export const OnboardingScreen: React.FC = () => {
                 <h2 className="text-2xl sm:text-3xl font-bold text-[#004D40] tracking-tight">
                   {t.step1_heading}
                 </h2>
-                <p className="mt-3 text-base text-[#004D40]/75 max-w-xl mx-auto leading-relaxed">
-                  {t.step1_message}
-                </p>
+                <KaraokeExplanation
+                  text={t.step1_message}
+                  isPlaying={isSpeaking}
+                  activeWordIndex={activeWordIndex}
+                  highlightMode={highlightMode}
+                  language={language}
+                  className="mt-3 text-base max-w-xl mx-auto leading-relaxed text-center"
+                />
 
                 <div className="mt-8 pt-4 flex justify-center">
                   <button
@@ -387,9 +537,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step2_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6">
-              {t.step2_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step2_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="space-y-6">
               {/* Optional Name Confirmation */}
@@ -507,9 +662,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step3_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6">
-              {t.step3_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step3_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {[
@@ -588,9 +748,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step4_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6">
-              {t.step4_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step4_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="space-y-6">
               {/* GPS Geolocation Button */}
@@ -615,18 +780,30 @@ export const OnboardingScreen: React.FC = () => {
                 <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-2">
                   {t.label_state}
                 </label>
-                <select
-                  value={stateName}
-                  onChange={(e) => setStateName(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 focus:outline-none focus:border-[#004D40]"
-                >
-                  <option value="">{t.select_state}</option>
-                  {INDIAN_STATES_AND_UTS.map((st) => (
-                    <option key={st} value={st}>
-                      {st}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    value={stateName}
+                    onChange={(e) => setStateName(e.target.value)}
+                    className="w-full px-4 py-3 pr-12 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 focus:outline-none focus:border-[#004D40]"
+                  >
+                    <option value="">{t.select_state}</option>
+                    {INDIAN_STATES_AND_UTS.map((st) => (
+                      <option key={st} value={st}>
+                        {st}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => toggleVoiceInput('state')}
+                    className={`absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-lg cursor-pointer ${
+                      isVoiceActive ? 'bg-red-100 text-red-600 animate-pulse' : 'text-[#004D40]/50 hover:bg-[#004D40]/5'
+                    }`}
+                    title={t.voice_tap_to_speak}
+                  >
+                    {isVoiceActive ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
 
               {/* District / Area Type Buttons */}
@@ -694,9 +871,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step5_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6">
-              {t.step5_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step5_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="space-y-6">
               {/* Existing vs New Business Tappable Options */}
@@ -845,9 +1027,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step6_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6 leading-relaxed">
-              {t.step6_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step6_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             <div className="space-y-3">
               {[
@@ -928,9 +1115,14 @@ export const OnboardingScreen: React.FC = () => {
             <h2 className="text-xl sm:text-2xl font-bold text-[#004D40]">
               {t.step7_heading}
             </h2>
-            <p className="text-sm text-[#004D40]/70 mt-1 mb-6 leading-relaxed">
-              {t.step7_message}
-            </p>
+            <KaraokeExplanation
+              text={t.step7_message}
+              isPlaying={isSpeaking}
+              activeWordIndex={activeWordIndex}
+              highlightMode={highlightMode}
+              language={language}
+              className="mt-1 mb-6"
+            />
 
             {/* Summary Card with per-field Edit links */}
             <div className="bg-[#004D40]/5 border border-[#004D40]/15 rounded-xl p-4 sm:p-5 mb-8">
@@ -1123,6 +1315,117 @@ export const OnboardingScreen: React.FC = () => {
         )}
           </div>
         </div>
+
+        {/* Right Column: Live Match Preview Sidebar */}
+        <aside className="w-full sticky top-20 self-start">
+          <div className="bg-white rounded-2xl border border-[#004D40]/15 shadow-xs p-5 sm:p-6 space-y-0">
+            {/* Top Match So Far (blurred detail until Step 6) */}
+            {step >= 2 && liveMatches.length > 0 && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-1.5">
+                  <Trophy className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{language === 'hi' ? 'शीर्ष योजना अभी' : 'Top Match So Far'}</span>
+                </div>
+                <div className="p-2.5 rounded-lg bg-[#FF6B35]/5 border border-[#FF6B35]/15">
+                  <p className="text-xs font-bold text-[#004D40] line-clamp-1">
+                    {language === 'hi' ? liveMatches[0].scheme.hindi_name : liveMatches[0].scheme.name}
+                  </p>
+                  <p className={`text-[11px] font-semibold mt-0.5 ${step >= 6 ? 'text-[#FF6B35]' : 'text-[#004D40]/40 blur-[3px] select-none'}`}>
+                    {language === 'hi' ? liveMatches[0].scheme.hindi_benefit_headline : liveMatches[0].scheme.benefit_headline}
+                  </p>
+                  {step < 6 && (
+                    <p className="text-[9px] text-[#004D40]/50 mt-1">
+                      {language === 'hi' ? 'विवरण के लिए जारी रखें' : 'Continue to reveal details'}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Category-specific icons, live as soon as categories are picked */}
+            {step >= 3 && categories.length > 0 && !categories.includes('Prefer not to say') && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-2">
+                  <Tags className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{language === 'hi' ? 'प्रासंगिक श्रेणियां' : 'Relevant Categories'}</span>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {categories.map((cat) => {
+                    const CatIcon = catIconMap[cat] || User;
+                    return (
+                      <span
+                        key={cat}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#004D40]/5 text-[10px] font-semibold text-[#004D40]"
+                      >
+                        <CatIcon className="w-3 h-3" />
+                        <span>{cat}</span>
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* State-specific live fact */}
+            {step >= 4 && stateName && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-1.5">
+                  <MapPin className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{stateName}</span>
+                </div>
+                <p className="text-[11px] text-[#004D40]/70">
+                  {language === 'hi'
+                    ? `${stateName} में ${stateSchemeCount} सक्रिय योजनाएं उपलब्ध हैं`
+                    : `${stateSchemeCount} active schemes available in ${stateName}`}
+                </p>
+              </div>
+            )}
+
+            {/* Comparative encouragement nudge */}
+            {step >= 3 && filledSignalsCount >= 2 && liveMatches.length > 0 && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 mb-1">
+                  <TrendingUp className="w-3.5 h-3.5" />
+                  <span>{language === 'hi' ? 'बढ़िया प्रगति' : 'Great progress'}</span>
+                </div>
+                <p className="text-[11px] text-[#004D40]/70">
+                  {language === 'hi'
+                    ? 'आप पहले से ही अधिकांश नए आवेदकों की तुलना में अधिक योजनाओं के लिए योग्य हैं'
+                    : 'You already qualify for more schemes than most first-time applicants'}
+                </p>
+              </div>
+            )}
+
+            {/* Business-type mini illustration */}
+            {step >= 5 && bizType && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-lg bg-[#004D40]/5 flex items-center justify-center shrink-0 text-[#FF6B35]">
+                    {React.createElement(bizIconMap[bizType] || Briefcase, { className: 'w-5 h-5' })}
+                  </div>
+                  <p className="text-[11px] text-[#004D40]/70">
+                    {language === 'hi' ? 'आपका व्यवसाय क्षेत्र चुना गया' : 'Business sector selected'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Income to potential benefit ceiling preview */}
+            {step >= 6 && incomeRange && liveMatches.length > 0 && (
+              <div className="pt-3 border-t border-[#004D40]/10">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#004D40] mb-1.5">
+                  <Wallet className="w-3.5 h-3.5 text-[#FF6B35]" />
+                  <span>{language === 'hi' ? 'संभावित लाभ' : 'Potential Benefit'}</span>
+                </div>
+                <p className="text-[11px] text-[#004D40]/70">
+                  {language === 'hi'
+                    ? `इस आय स्तर पर, आप ${liveMatches[0].scheme.benefits.hindi_max_loan_or_grant} तक के लाभ के लिए योग्य हो सकते हैं`
+                    : `At this income level, you could qualify for up to ${liveMatches[0].scheme.benefits.max_loan_or_grant}`}
+                </p>
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
     </div>
   );

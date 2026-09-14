@@ -1,10 +1,18 @@
 import React from 'react';
-import { ShieldCheck, Info, Home, User, LogOut } from 'lucide-react';
+import { ShieldCheck, Info, Home, User, LogOut, Bookmark } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 
 export const Navbar: React.FC = () => {
-  const { language, setLanguage, contentMode, setContentMode, currentScreen, navigateTo, user, logout } = useAppStore();
+  const { language, setLanguage, contentMode, setContentMode, currentScreen, navigateTo, user, logout, savedSchemeIds, bgTheme, setBgTheme } = useAppStore();
+
+  const bgSwatches: { key: 'original' | 'tan' | 'navy' | 'stone' | 'vanilla'; color: string; label: string }[] = [
+    { key: 'original', color: '#FAFAF7', label: 'Original' },
+    { key: 'tan', color: '#D2B48C', label: 'Tan' },
+    { key: 'navy', color: '#000080', label: 'Navy' },
+    { key: 'stone', color: '#CBC3B4', label: 'Stone' },
+    { key: 'vanilla', color: '#F3E5AB', label: 'Vanilla' },
+  ];
   const t = translations[language];
 
   const handleBrandClick = () => {
@@ -26,9 +34,9 @@ export const Navbar: React.FC = () => {
           className="flex items-center gap-2.5 sm:gap-3 text-left group focus:outline-none cursor-pointer"
           aria-label="Go to YojanaMatch home"
         >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl overflow-hidden flex items-center justify-center bg-white border border-[#004D40]/10 shadow-xs group-hover:scale-105 transition-transform p-0.5 shrink-0">
+          <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden flex items-center justify-center bg-white border border-[#004D40]/10 shadow-xs group-hover:scale-105 transition-transform p-1 shrink-0">
             <img
-              src="https://raw.githubusercontent.com/mradvitiyalive-maker/logo/main/yml2.jpg"
+              src="https://raw.githubusercontent.com/mradvitiyalive-maker/images/main/sd.png"
               alt="YojanaMatch logo"
               className="w-full h-full object-contain"
               referrerPolicy="no-referrer"
@@ -100,6 +108,26 @@ export const Navbar: React.FC = () => {
 
               {user.onboarding_completed && (
                 <button
+                  onClick={() => navigateTo('saved')}
+                  className={`touch-target relative flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
+                    currentScreen === 'saved'
+                      ? 'bg-[#004D40]/10 text-[#004D40]'
+                      : 'text-[#004D40]/80 hover:text-[#004D40] hover:bg-[#004D40]/5'
+                  }`}
+                  title={language === 'hi' ? 'सहेजी गई योजनाएं' : 'Saved Schemes'}
+                >
+                  <Bookmark className="w-4 h-4 text-[#FF6B35]" />
+                  <span className="hidden md:inline">{language === 'hi' ? 'सहेजी गई' : 'Saved'}</span>
+                  {savedSchemeIds.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FF6B35] text-white text-[9px] font-bold flex items-center justify-center">
+                      {savedSchemeIds.length > 9 ? '9+' : savedSchemeIds.length}
+                    </span>
+                  )}
+                </button>
+              )}
+
+              {user.onboarding_completed && (
+                <button
                   onClick={() => navigateTo('profile')}
                   className={`touch-target flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
                     currentScreen === 'profile'
@@ -130,6 +158,23 @@ export const Navbar: React.FC = () => {
             <Info className="w-4 h-4" />
             <span className="hidden sm:inline">{t.nav_about}</span>
           </button>
+
+          {/* Background Theme Swatches */}
+          <div className="flex items-center gap-1 px-1.5 py-1 rounded-full bg-[#004D40]/5 border border-[#004D40]/10">
+            {bgSwatches.map((sw) => (
+              <button
+                key={sw.key}
+                type="button"
+                onClick={() => setBgTheme(sw.key)}
+                title={sw.label}
+                aria-label={`Background: ${sw.label}`}
+                className={`w-5 h-5 rounded-full border-2 cursor-pointer transition-transform hover:scale-110 ${
+                  bgTheme === sw.key ? 'border-[#FF6B35] scale-110' : 'border-white/60'
+                }`}
+                style={{ backgroundColor: sw.color, boxShadow: '0 0 0 1px rgba(0,0,0,0.08)' }}
+              />
+            ))}
+          </div>
 
           {/* Segmented Pill Language Toggle */}
           <div className="flex bg-[#004D40]/5 rounded-full p-0.5 border border-[#004D40]/10">

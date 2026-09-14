@@ -14,13 +14,15 @@ export const SignupScreen: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setValidationError(null);
+    setSuccessMessage(null);
 
     const cleanName = name.trim();
-    if (!cleanName) {
+    if (!cleanName && mode === 'signup') {
       setValidationError(t.signup_error_name);
       return;
     }
@@ -55,7 +57,22 @@ export const SignupScreen: React.FC = () => {
     }
 
     try {
-      await loginOrSignup(cleanName, identifier, authMethod, rememberMe);
+      const submitName = cleanName || 'Beneficiary';
+      await loginOrSignup(submitName, identifier, authMethod, rememberMe);
+      
+      if (mode === 'signup') {
+        // Reset logged-in session state temporarily so user sees account created banner and logs in
+        useAppStore.setState({ user: null, currentScreen: 'signup' });
+        localStorage.removeItem('ym_session_phone');
+        localStorage.removeItem('ym_session_token');
+
+        setSuccessMessage(
+          language === 'hi'
+            ? 'खाता सफलतापूर्वक बनाया गया! कृपया आगे बढ़ने के लिए नीचे लॉग इन करें।'
+            : 'Account created successfully! Please log in below to access your dashboard.'
+        );
+        setMode('login');
+      }
     } catch (err: any) {
       setValidationError(err.message || 'Error continuing. Please check your connection.');
     }
@@ -181,6 +198,19 @@ export const SignupScreen: React.FC = () => {
             </p>
           </div>
 
+          {/* Account Created Success Banner */}
+          {successMessage && (
+            <div className="mb-5 p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-start gap-2.5 text-xs sm:text-sm text-emerald-800 shadow-xs">
+              <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <strong className="block font-bold">
+                  {language === 'hi' ? 'खाता सफलतापूर्वक बनाया गया!' : 'Account Created Successfully!'}
+                </strong>
+                <span>{successMessage}</span>
+              </div>
+            </div>
+          )}
+
           {/* Validation / Server Error Banner */}
           {validationError && (
             <div className="mb-5 p-3 rounded-xl bg-red-50 border border-red-200 flex items-start gap-2.5 text-xs sm:text-sm text-red-700">
@@ -214,7 +244,7 @@ export const SignupScreen: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
-                {t.signup_name_label} <span className="text-red-500">*</span>
+                {t.signup_name_label} {mode === 'signup' ? <span className="text-red-500">*</span> : <span className="text-gray-400 font-normal">({language === 'hi' ? 'वैकल्पिक' : 'Optional'})</span>}
               </label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
@@ -227,7 +257,7 @@ export const SignupScreen: React.FC = () => {
                   placeholder={t.signup_name_placeholder}
                   className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors"
                   autoComplete="name"
-                  required
+                  required={mode === 'signup'}
                 />
               </div>
             </div>
@@ -327,7 +357,11 @@ export const SignupScreen: React.FC = () => {
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>{t.signup_continue_btn}</span>
+                  <span>
+                    {mode === 'signup'
+                      ? (language === 'hi' ? 'खाता बनाएं' : 'Create Account')
+                      : (language === 'hi' ? 'लॉग इन करें' : 'Log In')}
+                  </span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

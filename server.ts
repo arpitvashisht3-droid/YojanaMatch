@@ -35,7 +35,11 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
 
-app.use(cors());
+// CORS: In production the frontend is served from the same Render instance,
+// so CORS is only needed for external API clients. Use ALLOWED_ORIGIN env var
+// to restrict to a known origin, or leave unset to allow all (wildcard).
+const corsOrigin = process.env.ALLOWED_ORIGIN || "*";
+app.use(cors({ origin: corsOrigin, credentials: corsOrigin !== "*" }));
 app.use(express.json());
 
 // Initialize Google Gemini AI SDK if API Key is available
@@ -215,8 +219,10 @@ app.patch("/api/user/profile", requireAuth, async (req: AuthenticatedRequest, re
     }
 
     const profileFields = [
-      "age", "gender", "caste_category", "state", "district_type",
-      "business_type", "estimated_income", "is_differently_abled",
+      "age", "age_range", "gender", "caste_category", "categories",
+      "state", "district_type",
+      "business_situation", "business_type", "business_type_custom", "business_age",
+      "income_range", "estimated_income", "is_differently_abled",
       "education_level", "course_type", "current_marks_percentage"
     ];
 
@@ -265,8 +271,10 @@ app.post("/api/auth/update-profile", async (req: Request, res: Response) => {
     }
 
     const profileFields = [
-      "age", "gender", "caste_category", "state", "district_type",
-      "business_type", "estimated_income", "is_differently_abled",
+      "age", "age_range", "gender", "caste_category", "categories",
+      "state", "district_type",
+      "business_situation", "business_type", "business_type_custom", "business_age",
+      "income_range", "estimated_income", "is_differently_abled",
       "education_level", "course_type", "current_marks_percentage"
     ];
 
@@ -308,8 +316,10 @@ app.put("/api/user/onboarding", requireAuth, async (req: AuthenticatedRequest, r
     await UserModel.updateOnboarding(userId, step, completed);
 
     const profileFields = [
-      "age", "gender", "caste_category", "state", "district_type",
-      "business_type", "estimated_income", "is_differently_abled",
+      "age", "age_range", "gender", "caste_category", "categories",
+      "state", "district_type",
+      "business_situation", "business_type", "business_type_custom", "business_age",
+      "income_range", "estimated_income", "is_differently_abled",
       "education_level", "course_type", "current_marks_percentage"
     ];
 
@@ -649,7 +659,16 @@ app.post("/api/match-schemes", async (req: Request, res: Response) => {
       activeDataset = activeMode === "scholarships" ? (scholarshipsRaw as any[]) : (schemesRaw as any[]);
     }
 
-    const results = matchSchemes(userProfile, activeDataset, category_type || "scheme");
+    // Normalize MongoDB documents: map scheme_id / scholarship_id → id so the
+    // matchingEngine (which uses scheme.id) and the frontend Scheme type both work correctly.
+    const normalizedDataset = activeDataset.map((item: any) => {
+      if (item && !item.id && (item.scheme_id || item.scholarship_id)) {
+        return { ...item, id: item.scheme_id || item.scholarship_id };
+      }
+      return item;
+    });
+
+    const results = matchSchemes(userProfile, normalizedDataset, category_type || "scheme");
 
     return res.json({
       total_matches: results.length,
@@ -843,6 +862,77 @@ async function startServer() {
     console.log("Connecting to MongoDB Atlas...");
     const db = await connectDB();
     console.log(`Successfully connected to MongoDB database: '${db.databaseName}'`);
+
+    // Auto-seed: if the schemes collection is empty, seed from bundled static JSON.
+    // This handles fresh Render deployments without a separate seed job.
+    try {
+      const schemeCount = await SchemeModel.getAllActiveSchemes().then((s) => s.length).catch(() => 0);
+      if (schemeCount === 0) {
+        console.log("Schemes collection is empty — auto-seeding from bundled JSON data...");
+        let seeded = 0;
+        for (const item of schemesRaw as any[]) {
+          const schemeId = item.scheme_id || item.id;
+          if (!schemeId) continue;
+          await SchemeModel.upsertScheme({
+            scheme_id: schemeId,
+            name: item.name || "",
+            hindi_name: item.hindi_name || "",
+            ministry: item.ministry || "",
+            hindi_ministry: item.hindi_ministry || "",
+            benefit_headline: item.benefit_headline || "",
+            hindi_benefit_headline: item.hindi_benefit_headline || "",
+            official_link: item.official_link || "",
+            short_summary: item.short_summary || "",
+            hindi_short_summary: item.hindi_short_summary || "",
+            eligibility: item.eligibility || {},
+            benefits: item.benefits || {},
+            applicable_states: item.applicable_states,
+            category_tags: item.category_tags,
+            popularity_score: item.popularity_score,
+            is_active: item.is_active ?? true,
+            source: "curated",
+          });
+          seeded++;
+        }
+        console.log(`Auto-seed complete: ${seeded} schemes inserted into MongoDB.`);
+      } else {
+        console.log(`Schemes collection has ${schemeCount} active records — skipping auto-seed.`);
+      }
+
+      const scholarshipCount = await ScholarshipModel.getAllActiveScholarships().then((s) => s.length).catch(() => 0);
+      if (scholarshipCount === 0) {
+        console.log("Scholarships collection is empty — auto-seeding from bundled JSON data...");
+        let seeded = 0;
+        for (const item of scholarshipsRaw as any[]) {
+          const scholarshipId = item.scholarship_id || item.id;
+          if (!scholarshipId) continue;
+          await ScholarshipModel.upsertScholarship({
+            scholarship_id: scholarshipId,
+            name: item.name || "",
+            hindi_name: item.hindi_name || "",
+            ministry: item.ministry || "",
+            hindi_ministry: item.hindi_ministry || "",
+            benefit_headline: item.benefit_headline || "",
+            hindi_benefit_headline: item.hindi_benefit_headline || "",
+            official_link: item.official_link || "",
+            short_summary: item.short_summary || "",
+            hindi_short_summary: item.hindi_short_summary || "",
+            eligibility: item.eligibility || {},
+            benefits: item.benefits || {},
+            applicable_states: item.applicable_states,
+            category_tags: item.category_tags,
+            popularity_score: item.popularity_score,
+            is_active: item.is_active ?? true,
+          });
+          seeded++;
+        }
+        console.log(`Auto-seed complete: ${seeded} scholarships inserted into MongoDB.`);
+      } else {
+        console.log(`Scholarships collection has ${scholarshipCount} active records — skipping auto-seed.`);
+      }
+    } catch (seedErr: any) {
+      console.warn("Auto-seed warning (non-fatal):", seedErr?.message || seedErr);
+    }
   } catch (err: any) {
     if (isProduction) {
       console.error("FATAL ERROR: MongoDB connection failed in Production mode:", err?.message || err);

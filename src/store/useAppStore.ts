@@ -912,10 +912,26 @@ async function runMatchingAndResults(
     if (res.ok) {
       const data = await res.json();
       results = normalizeMatchedResults(data.results || []);
+      console.debug('[match-schemes] API returned', data.total_matches, 'matches');
     } else {
+      const errData = await res.json().catch(() => ({}));
+      console.error('[match-schemes] API error', res.status, errData);
+      if (res.status === 503) {
+        // Database unavailable — surface this to the user rather than silently showing empty
+        set({
+          isLoading: false,
+          error: errData.detail || errData.error || 'The matching service is temporarily unavailable. Please try again in a moment.',
+          matchedResults: [],
+          expandedCardIds: [],
+          currentScreen: 'results',
+        });
+        return;
+      }
+      // For other non-fatal errors fall back to local data
       results = normalizeMatchedResults(matchSchemes(profile, activeRawDataset as any, activeCategoryType));
     }
-  } catch {
+  } catch (fetchErr) {
+    console.error('[match-schemes] Network error', fetchErr);
     results = normalizeMatchedResults(matchSchemes(profile, activeRawDataset as any, activeCategoryType));
   }
 

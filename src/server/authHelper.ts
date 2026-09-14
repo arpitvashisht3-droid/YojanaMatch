@@ -87,11 +87,18 @@ export function toFlatUser(userDoc: UserDocument | any): UserRecord {
 
     // Flat profile attributes expected by Frontend UI
     age: profile.age ?? undefined,
+    // UI-specific profile fields (stored in embedded profile, returned for onboarding pre-fill)
+    age_range: profile.age_range ?? undefined,
     gender: profile.gender ?? undefined,
     caste_category: profile.caste_category ?? undefined,
+    categories: Array.isArray(profile.categories) ? profile.categories : undefined,
     state: profile.state ?? undefined,
     district_type: profile.district_type ?? undefined,
+    business_situation: profile.business_situation ?? undefined,
     business_type: profile.business_type ?? undefined,
+    business_type_custom: profile.business_type_custom ?? undefined,
+    business_age: profile.business_age ?? undefined,
+    income_range: profile.income_range ?? undefined,
     estimated_income: profile.estimated_income ?? undefined,
     is_differently_abled: profile.is_differently_abled ?? undefined,
     education_level: profile.education_level ?? undefined,

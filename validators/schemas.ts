@@ -14,8 +14,8 @@ export const userJsonSchema = {
       name: { bsonType: "string", minLength: 2, description: "Must be a string of at least 2 characters" },
       phone_number: {
         bsonType: "string",
-        pattern: "^[0-9]{10}$",
-        description: "Must be a 10-digit clean Indian mobile number"
+        minLength: 3,
+        description: "10-digit Indian mobile number or email address string"
       },
       password_hash: { bsonType: "string", description: "Bcrypt password hash string" },
       role: { enum: ["user", "admin"], description: "User access level role" },

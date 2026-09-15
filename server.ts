@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
 
 import { connectDB } from "./config/connection.js";
-import { UserModel } from "./models/User.js";
+import { UserModel, normalizePhoneNumber } from "./models/User.js";
 import { SchemeModel } from "./models/Scheme.js";
 import { ScholarshipModel } from "./models/Scholarship.js";
 import { MatchHistoryModel } from "./models/MatchHistory.js";
@@ -104,30 +104,31 @@ app.get("/api/health", async (_req: Request, res: Response) => {
 // POST /api/auth/signup - Registered user signup with password
 app.post("/api/auth/signup", async (req: Request, res: Response) => {
   try {
-    const { name, phone_number, password } = req.body;
-    if (!name || !phone_number || !password) {
-      return res.status(400).json({ error: "Name, phone number, and password are required." });
+    const { name, phone_number, identifier, password } = req.body;
+    const targetIdentifier = identifier || phone_number;
+    if (!name || !targetIdentifier || !password) {
+      return res.status(400).json({ error: "Name, phone/email, and password are required." });
     }
 
-    const cleanPhone = (phone_number || "").replace(/\D/g, "").slice(-10);
-    if (cleanPhone.length !== 10) {
-      return res.status(400).json({ error: "Please enter a valid 10-digit phone number." });
+    const cleanIdentifier = normalizePhoneNumber(targetIdentifier);
+    if (!cleanIdentifier || cleanIdentifier.length < 3) {
+      return res.status(400).json({ error: "Please enter a valid phone number or email address." });
     }
 
-    const existing = await UserModel.findByPhone(cleanPhone);
+    const existing = await UserModel.findByPhone(cleanIdentifier);
     if (existing) {
-      return res.status(409).json({ error: "An account with this phone number already exists." });
+      return res.status(409).json({ error: "An account with this phone number or email already exists." });
     }
 
     const password_hash = hashPassword(password);
     const userDoc = await UserModel.createUser({
       name,
-      phone_number: cleanPhone,
+      phone_number: cleanIdentifier,
       password_hash,
     });
 
     const flatUser = toFlatUser(userDoc);
-    const token = signJwtToken({ id: userDoc._id?.toString(), phone_number: cleanPhone });
+    const token = signJwtToken({ id: userDoc._id?.toString(), phone_number: cleanIdentifier });
 
     return res.status(201).json({ user: flatUser, token });
   } catch (error: any) {
@@ -135,22 +136,24 @@ app.post("/api/auth/signup", async (req: Request, res: Response) => {
   }
 });
 
-// POST /api/auth/login - Registered user login
+// POST /api/auth/login - Registered user login with password
 app.post("/api/auth/login", async (req: Request, res: Response) => {
   try {
-    const { phone_number, password } = req.body;
-    if (!phone_number || !password) {
-      return res.status(400).json({ error: "Phone number and password are required." });
+    const { phone_number, identifier, password } = req.body;
+    const targetIdentifier = identifier || phone_number;
+    if (!targetIdentifier || !password) {
+      return res.status(400).json({ error: "Phone number/email and password are required." });
     }
 
-    const userDoc = await UserModel.findByPhone(phone_number);
+    const cleanIdentifier = normalizePhoneNumber(targetIdentifier);
+    const userDoc = await UserModel.findByPhone(cleanIdentifier);
     if (!userDoc || !userDoc.password_hash) {
-      return res.status(401).json({ error: "Invalid phone number or password." });
+      return res.status(401).json({ error: "Invalid phone number/email or password." });
     }
 
     const valid = verifyPassword(password, userDoc.password_hash);
     if (!valid) {
-      return res.status(401).json({ error: "Invalid phone number or password." });
+      return res.status(401).json({ error: "Invalid phone number/email or password." });
     }
 
     const flatUser = toFlatUser(userDoc);

@@ -149,6 +149,8 @@ interface AppState {
   // Auth & Onboarding Actions
   initAuthSession: () => Promise<void>;
   loginOrSignup: (name: string, phone: string, authMethod?: 'mobile' | 'email', rememberMe?: boolean) => Promise<{ isNewUser: boolean; user: UserRecord }>;
+  signupUser: (name: string, identifier: string, password?: string) => Promise<{ isNewUser: boolean; user: UserRecord }>;
+  loginUser: (identifier: string, password?: string) => Promise<{ user: UserRecord }>;
   updateUserProfile: (updates: Partial<UserRecord>) => Promise<UserRecord | null>;
   logout: () => void;
 }
@@ -283,6 +285,77 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().fetchSavedSchemes();
 
       return { isNewUser: data.isNewUser, user };
+    } catch (err: any) {
+      set({ isLoading: false, error: err.message || 'Login failed' });
+      throw err;
+    }
+  },
+
+  signupUser: async (name: string, identifier: string, password?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const endpoint = password ? '/api/auth/signup' : '/api/auth/signup-or-login';
+      const body = password
+        ? { name, phone_number: identifier, password }
+        : { name, phone_number: identifier };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Failed to create account');
+      }
+
+      const data = await res.json();
+      set({ isLoading: false, error: null });
+      return { isNewUser: true, user: data.user };
+    } catch (err: any) {
+      set({ isLoading: false, error: err.message || 'Signup failed' });
+      throw err;
+    }
+  },
+
+  loginUser: async (identifier: string, password?: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const endpoint = password ? '/api/auth/login' : '/api/auth/signup-or-login';
+      const body = password
+        ? { phone_number: identifier, password }
+        : { phone_number: identifier };
+
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.error || 'Invalid credentials or password');
+      }
+
+      const data = await res.json();
+      const user: UserRecord = data.user;
+      localStorage.setItem(SESSION_STORAGE_KEY, user.phone_number);
+      if (data.token) {
+        localStorage.setItem(TOKEN_STORAGE_KEY, data.token);
+      }
+
+      const nextScreen: AppScreen = user.onboarding_completed ? 'landing' : 'onboarding';
+      set({
+        user,
+        savedSchemeIds: normalizeSavedIdList(user.saved_schemes || []),
+        currentScreen: nextScreen,
+        isLoading: false,
+        error: null,
+      });
+
+      get().fetchSavedSchemes();
+      return { user };
     } catch (err: any) {
       set({ isLoading: false, error: err.message || 'Login failed' });
       throw err;

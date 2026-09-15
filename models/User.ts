@@ -22,7 +22,11 @@ function getColOrNull() {
  * Clean phone number normalization helper (10 digits Indian format)
  */
 export function normalizePhoneNumber(phone: string): string {
-  const digits = (phone || "").replace(/\D/g, "");
+  const raw = (phone || "").trim().toLowerCase();
+  if (raw.includes("@")) {
+    return raw;
+  }
+  const digits = raw.replace(/\D/g, "");
   if (digits.length === 12 && digits.startsWith("91")) {
     return digits.slice(2);
   }

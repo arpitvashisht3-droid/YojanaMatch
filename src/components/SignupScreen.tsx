@@ -4,15 +4,16 @@ import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 
 export const SignupScreen: React.FC = () => {
-  const { language, loginOrSignup, isLoading } = useAppStore();
+  const { language, signupUser, loginUser, isLoading } = useAppStore();
   const t = translations[language];
 
-  const [mode, setMode] = useState<'signup' | 'login'>('signup');
+  const [mode, setMode] = useState<'login' | 'signup'>('login');
   const [rememberMe, setRememberMe] = useState(true);
-  const [authMethod, setAuthMethod] = useState<'mobile' | 'email'>('mobile');
+  const [authMethod, setAuthMethod] = useState<'mobile' | 'email'>('email');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [validationError, setValidationError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -22,7 +23,7 @@ export const SignupScreen: React.FC = () => {
     setSuccessMessage(null);
 
     const cleanName = name.trim();
-    if (!cleanName && mode === 'signup') {
+    if (mode === 'signup' && !cleanName) {
       setValidationError(t.signup_error_name);
       return;
     }
@@ -56,25 +57,32 @@ export const SignupScreen: React.FC = () => {
       identifier = cleanEmail;
     }
 
+    if (password && password.length < 6) {
+      setValidationError(language === 'hi' ? 'पासवर्ड कम से कम 6 अक्षरों का होना चाहिए' : 'Password must be at least 6 characters long');
+      return;
+    }
+
     try {
-      const submitName = cleanName || 'Beneficiary';
-      await loginOrSignup(submitName, identifier, authMethod, rememberMe);
-      
       if (mode === 'signup') {
-        // Reset logged-in session state temporarily so user sees account created banner and logs in
+        const submitName = cleanName || 'Beneficiary';
+        await signupUser(submitName, identifier, password);
+
+        // Reset session state temporarily so user sees account created banner and logs in
         useAppStore.setState({ user: null, currentScreen: 'signup' });
         localStorage.removeItem('ym_session_phone');
         localStorage.removeItem('ym_session_token');
 
         setSuccessMessage(
           language === 'hi'
-            ? 'खाता सफलतापूर्वक बनाया गया! कृपया आगे बढ़ने के लिए नीचे लॉग इन करें।'
-            : 'Account created successfully! Please log in below to access your dashboard.'
+            ? 'खाता सफलतापूर्वक बनाया गया! लॉग इन करने के लिए कृपया अपना पासवर्ड दर्ज करें।'
+            : 'Account created successfully! Please enter your password below to log in.'
         );
         setMode('login');
+      } else {
+        await loginUser(identifier, password);
       }
     } catch (err: any) {
-      setValidationError(err.message || 'Error continuing. Please check your connection.');
+      setValidationError(err.message || 'Authentication failed. Please check your credentials.');
     }
   };
 
@@ -334,6 +342,31 @@ export const SignupScreen: React.FC = () => {
               )}
             </div>
 
+            {/* Password Field */}
+            <div>
+              <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
+                {language === 'hi' ? 'पासवर्ड' : 'Password'}{' '}
+                {mode === 'signup' ? <span className="text-red-500">*</span> : <span className="text-gray-400 font-normal">({language === 'hi' ? 'वैकल्पिक' : 'Optional'})</span>}
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
+                  <Lock className="w-4 h-4" />
+                </div>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={
+                    mode === 'signup'
+                      ? (language === 'hi' ? 'सुरक्षित पासवर्ड बनाएं (कम से कम 6 अक्षर)' : 'Create a password (min 6 chars)')
+                      : (language === 'hi' ? 'अपना पासवर्ड दर्ज करें' : 'Enter your password')
+                  }
+                  className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors"
+                  autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                />
+              </div>
+            </div>
+
             {/* Remember Me Checkbox */}
             <label className="flex items-center gap-2 cursor-pointer select-none pt-1">
               <input
@@ -366,6 +399,33 @@ export const SignupScreen: React.FC = () => {
                 </>
               )}
             </button>
+
+            {/* Bottom Mode Switcher Link */}
+            <div className="mt-3 text-center pt-1">
+              {mode === 'login' ? (
+                <p className="text-xs sm:text-sm text-[#004D40]/80">
+                  {language === 'hi' ? 'खाता नहीं है? ' : "Don't have an account? "}
+                  <button
+                    type="button"
+                    onClick={() => { setMode('signup'); setValidationError(null); setSuccessMessage(null); }}
+                    className="font-bold text-[#FF6B35] hover:underline cursor-pointer ml-1"
+                  >
+                    {language === 'hi' ? 'नया खाता बनाएं' : 'Create Account'}
+                  </button>
+                </p>
+              ) : (
+                <p className="text-xs sm:text-sm text-[#004D40]/80">
+                  {language === 'hi' ? 'पहले से खाता है? ' : 'Already have an account? '}
+                  <button
+                    type="button"
+                    onClick={() => { setMode('login'); setValidationError(null); setSuccessMessage(null); }}
+                    className="font-bold text-[#FF6B35] hover:underline cursor-pointer ml-1"
+                  >
+                    {language === 'hi' ? 'लॉग इन करें' : 'Log In'}
+                  </button>
+                </p>
+              )}
+            </div>
           </form>
 
           {/* Trust Badges */}

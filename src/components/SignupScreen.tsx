@@ -77,12 +77,27 @@ export const SignupScreen: React.FC = () => {
             ? 'खाता सफलतापूर्वक बनाया गया! लॉग इन करने के लिए कृपया अपना पासवर्ड दर्ज करें।'
             : 'Account created successfully! Please enter your password below to log in.'
         );
+        setPassword('');
         setMode('login');
       } else {
         await loginUser(identifier, password);
       }
     } catch (err: any) {
-      setValidationError(err.message || 'Authentication failed. Please check your credentials.');
+      const msg = err.message || '';
+      if (
+        msg.includes('No account found') ||
+        msg.includes('create an account first') ||
+        msg.includes('no account')
+      ) {
+        setValidationError(
+          language === 'hi'
+            ? 'इस ईमेल/मोबाइल नंबर से कोई खाता नहीं मिला। कृपया पहले अपना खाता बनाएं।'
+            : 'No account found with this email/phone number. Please create an account first.'
+        );
+        setMode('signup');
+      } else {
+        setValidationError(msg || 'Authentication failed. Please check your credentials.');
+      }
     }
   };
 
@@ -114,7 +129,7 @@ export const SignupScreen: React.FC = () => {
 
       {/* 30/70 Responsive Grid Container */}
       <div className="grid grid-cols-1 min-[900px]:grid-cols-[32%_1fr] gap-6 sm:gap-8 items-stretch">
-        {/* ================= LEFT COLUMN (30% width, desktop/tablet >= 900px) ================= */}
+        {/* ================= LEFT COLUMN (30% width) ================= */}
         <div className="hidden min-[900px]:flex flex-col justify-between bg-white border border-[#004D40]/15 rounded-2xl shadow-xs p-6 sm:p-7 space-y-6">
           <div>
             {/* Logo Image */}
@@ -181,8 +196,8 @@ export const SignupScreen: React.FC = () => {
                   </strong>
                   <span className="text-[#004D40]/65 text-[11px]">
                     {language === 'hi'
-                      ? 'कोई पासवर्ड या ओटीपी की आवश्यकता नहीं।'
-                      : 'No password required, data stored securely.'}
+                      ? 'सुरक्षित प्रमाणीकरण और पूर्ण डेटा गोपनीयता।'
+                      : 'Secure authentication and complete data privacy.'}
                   </span>
                 </div>
               </div>
@@ -199,10 +214,14 @@ export const SignupScreen: React.FC = () => {
         <div className="bg-white border border-[#004D40]/15 rounded-2xl shadow-sm p-6 sm:p-8 flex flex-col justify-center">
           <div className="mb-6">
             <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-[#004D40]">
-              {t.signup_title}
+              {mode === 'login'
+                ? (language === 'hi' ? 'लॉग इन करें' : 'Log In')
+                : (language === 'hi' ? 'नया खाता बनाएं' : 'Create Account')}
             </h2>
             <p className="mt-1.5 text-xs sm:text-sm text-[#004D40]/70 leading-relaxed">
-              {t.signup_subtitle}
+              {mode === 'login'
+                ? (language === 'hi' ? 'अपनी सहेजी गई योजनाओं तक पहुँचने के लिए लॉग इन करें।' : 'Enter your credentials to log in and access your saved schemes.')
+                : (language === 'hi' ? 'योजना मैच का उपयोग करने के लिए नया खाता बनाएं।' : 'Enter your details below to create your YojanaMatch account.')}
             </p>
           </div>
 
@@ -227,48 +246,28 @@ export const SignupScreen: React.FC = () => {
             </div>
           )}
 
-          {/* Form */}
-          <div className="flex bg-[#004D40]/5 rounded-xl p-1 border border-[#004D40]/10 mb-5">
-            <button
-              type="button"
-              onClick={() => setMode('signup')}
-              className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold cursor-pointer transition-all ${
-                mode === 'signup' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
-              }`}
-            >
-              {language === 'hi' ? 'नया खाता बनाएं' : 'Create Account'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('login')}
-              className={`flex-1 py-2 rounded-lg text-xs sm:text-sm font-bold cursor-pointer transition-all ${
-                mode === 'login' ? 'bg-white shadow-2xs text-[#004D40]' : 'text-[#004D40]/60'
-              }`}
-            >
-              {language === 'hi' ? 'लॉग इन करें' : 'Log In'}
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
-                {t.signup_name_label} {mode === 'signup' ? <span className="text-red-500">*</span> : <span className="text-gray-400 font-normal">({language === 'hi' ? 'वैकल्पिक' : 'Optional'})</span>}
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
-                  <User className="w-4 h-4" />
+            {mode === 'signup' && (
+              <div>
+                <label className="block text-xs sm:text-sm font-semibold text-[#004D40] mb-1.5">
+                  {t.signup_name_label} <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-[#004D40]/40">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder={t.signup_name_placeholder}
+                    className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors"
+                    autoComplete="name"
+                    required
+                  />
                 </div>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t.signup_name_placeholder}
-                  className="w-full pl-10 pr-3.5 py-3 rounded-xl border border-[#004D40]/20 bg-white text-sm sm:text-base text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#004D40] focus:ring-2 focus:ring-[#004D40]/10 transition-colors"
-                  autoComplete="name"
-                  required={mode === 'signup'}
-                />
               </div>
-            </div>
+            )}
 
             <div>
               {/* Auth Method Tab Toggle */}

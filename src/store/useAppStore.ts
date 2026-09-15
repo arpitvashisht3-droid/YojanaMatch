@@ -213,6 +213,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   navigateTo: (screen) => set({ currentScreen: screen }),
 
   initAuthSession: async () => {
+    if (get().user) {
+      set({ isAuthChecking: false });
+      return;
+    }
     try {
       const storedPhone = localStorage.getItem(SESSION_STORAGE_KEY);
       if (!storedPhone) {

@@ -147,8 +147,12 @@ app.post("/api/auth/login", async (req: Request, res: Response) => {
 
     const cleanIdentifier = normalizePhoneNumber(targetIdentifier);
     const userDoc = await UserModel.findByPhone(cleanIdentifier);
-    if (!userDoc || !userDoc.password_hash) {
-      return res.status(401).json({ error: "Invalid phone number/email or password." });
+    if (!userDoc) {
+      return res.status(404).json({ error: "No account found with this email/phone. Please create an account first." });
+    }
+
+    if (!userDoc.password_hash) {
+      return res.status(401).json({ error: "Incorrect password or account credentials." });
     }
 
     const valid = verifyPassword(password, userDoc.password_hash);

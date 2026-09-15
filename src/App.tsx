@@ -9,10 +9,10 @@ import { SignupScreen } from './components/SignupScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { ProfileScreen } from './components/ProfileScreen';
 import { SavedSchemesScreen } from './components/SavedSchemesScreen';
-import { useAppStore, BG_THEME_COLORS } from './store/useAppStore';
+import { useAppStore } from './store/useAppStore';
 
 export default function App() {
-  const { currentScreen, isLoading, language, isAuthChecking, initAuthSession, user, bgTheme } = useAppStore();
+  const { currentScreen, isLoading, language, isAuthChecking, initAuthSession, user } = useAppStore();
 
   useEffect(() => {
     initAuthSession();
@@ -48,10 +48,7 @@ export default function App() {
     : currentScreen;
 
   return (
-    <div
-      className="min-h-screen flex flex-col text-[#004D40] antialiased selection:bg-[#FF6B35]/20 selection:text-[#FF6B35] transition-colors duration-300"
-      style={{ backgroundColor: BG_THEME_COLORS[bgTheme] }}
-    >
+    <div className="min-h-screen flex flex-col bg-[#FAFAF7] text-[#004D40] antialiased selection:bg-[#FF6B35]/20 selection:text-[#FF6B35]">
       {/* Top Navbar with Language Toggle and User Profile */}
       <Navbar />
 

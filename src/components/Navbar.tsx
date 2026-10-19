@@ -1,11 +1,34 @@
-import React from 'react';
-import { ShieldCheck, Info, Home, User, LogOut, Bookmark } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ShieldCheck, Info, Home, User, LogOut, Bookmark, Globe, ChevronDown, Check } from 'lucide-react';
+import type { AppLanguage } from '../types';
+
+const LANGUAGE_OPTIONS: { code: AppLanguage; short: string; label: string }[] = [
+  { code: 'en', short: 'EN', label: 'English' },
+  { code: 'hi', short: 'हिं', label: 'हिन्दी' },
+  { code: 'mr', short: 'मरा', label: 'मराठी' },
+  { code: 'te', short: 'తె', label: 'తెలుగు' },
+];
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 
 export const Navbar: React.FC = () => {
   const { language, setLanguage, contentMode, setContentMode, currentScreen, navigateTo, user, logout, bookmarkedSchemeIds } = useAppStore();
   const t = translations[language];
+
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+  const currentLang = LANGUAGE_OPTIONS.find((o) => o.code === language) || LANGUAGE_OPTIONS[0];
+
+  useEffect(() => {
+    if (!langMenuOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      if (langMenuRef.current && !langMenuRef.current.contains(e.target as Node)) {
+        setLangMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [langMenuOpen]);
 
   const handleBrandClick = () => {
     if (!user) {
@@ -151,28 +174,46 @@ export const Navbar: React.FC = () => {
             <span className="hidden sm:inline">{t.nav_about}</span>
           </button>
 
-          {/* Segmented Pill Language Toggle */}
-          <div className="flex bg-[#004D40]/5 rounded-full p-0.5 border border-[#004D40]/10">
+          {/* Language Dropdown */}
+          <div className="relative" ref={langMenuRef}>
             <button
-              onClick={() => setLanguage('en')}
-              className={`px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-bold tracking-wide transition-all cursor-pointer ${
-                language === 'en'
-                  ? 'bg-white shadow-2xs text-[#004D40]'
-                  : 'text-[#004D40]/60 hover:text-[#004D40]'
-              }`}
+              type="button"
+              onClick={() => setLangMenuOpen((o) => !o)}
+              className="touch-target flex items-center gap-1.5 bg-[#004D40]/5 border border-[#004D40]/10 rounded-full px-3 py-1.5 text-xs font-bold tracking-wide text-[#004D40] hover:bg-[#004D40]/10 transition-all cursor-pointer"
+              aria-haspopup="listbox"
+              aria-expanded={langMenuOpen}
+              aria-label="Choose language"
             >
-              EN
+              <Globe className="w-3.5 h-3.5" />
+              <span>{currentLang.short}</span>
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${langMenuOpen ? 'rotate-180' : ''}`} />
             </button>
-            <button
-              onClick={() => setLanguage('hi')}
-              className={`px-2.5 sm:px-3.5 py-1 rounded-full text-xs font-bold tracking-wide transition-all cursor-pointer ${
-                language === 'hi'
-                  ? 'bg-white shadow-2xs text-[#004D40]'
-                  : 'text-[#004D40]/60 hover:text-[#004D40]'
-              }`}
-            >
-              हिन्दी
-            </button>
+            {langMenuOpen && (
+              <ul
+                role="listbox"
+                className="absolute right-0 mt-2 w-40 bg-white border border-[#004D40]/10 rounded-xl shadow-lg py-1 z-40"
+              >
+                {LANGUAGE_OPTIONS.map((opt) => (
+                  <li key={opt.code} role="option" aria-selected={language === opt.code}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLanguage(opt.code);
+                        setLangMenuOpen(false);
+                      }}
+                      className={`touch-target w-full flex items-center justify-between px-3 py-2 text-sm font-semibold text-left cursor-pointer transition-colors ${
+                        language === opt.code
+                          ? 'bg-[#004D40]/10 text-[#004D40]'
+                          : 'text-[#004D40]/80 hover:bg-[#004D40]/5'
+                      }`}
+                    >
+                      <span>{opt.label}</span>
+                      {language === opt.code && <Check className="w-4 h-4 text-[#FF6B35]" />}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       </div>

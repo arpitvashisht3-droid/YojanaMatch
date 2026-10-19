@@ -3,6 +3,15 @@
  * with robust silent fallbacks and full Hindi / English support.
  */
 
+import type { AppLanguage } from '../types';
+
+const SPEECH_LANG_CODES: Record<AppLanguage, string> = {
+  en: 'en-IN',
+  hi: 'hi-IN',
+  mr: 'mr-IN',
+  te: 'te-IN',
+};
+
 // Speech Recognition instance
 let recognitionInstance: any = null;
 
@@ -12,7 +21,7 @@ export function isSpeechRecognitionSupported(): boolean {
 }
 
 export function startSpeechRecognition(
-  language: 'en' | 'hi',
+  language: AppLanguage,
   onResult: (transcript: string, isFinal: boolean) => void,
   onError?: () => void,
   onEnd?: () => void
@@ -29,7 +38,7 @@ export function startSpeechRecognition(
 
     recognition.continuous = true;
     recognition.interimResults = true;
-    recognition.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+    recognition.lang = SPEECH_LANG_CODES[language];
 
     recognition.onresult = (event: any) => {
       let fullTranscript = '';
@@ -101,7 +110,7 @@ export interface WordBoundaryEvent {
 
 export interface SpeakTextOptions {
   text?: string;
-  language: 'en' | 'hi';
+  language: AppLanguage;
   onStart?: () => void;
   onEnd?: () => void;
   onError?: () => void;
@@ -116,14 +125,14 @@ let activeEndCallback: (() => void) | null = null;
 /**
  * Parses plain text into word tokens with exact character boundaries and duration weights.
  */
-export function parseSpokenWords(text: string, language: 'en' | 'hi' = 'en'): SpokenWordItem[] {
+export function parseSpokenWords(text: string, language: AppLanguage = 'en'): SpokenWordItem[] {
   const clean = text.replace(/[*_#`~]/g, '');
   const words: SpokenWordItem[] = [];
   const regex = /\S+/g;
   let match: RegExpExecArray | null;
   let index = 0;
   let currentMs = 0;
-  const msPerUnit = language === 'hi' ? 62 : 54;
+  const msPerUnit = language === 'en' ? 54 : 62;
 
   while ((match = regex.exec(clean)) !== null) {
     const word = match[0];
@@ -154,7 +163,7 @@ export function parseSpokenWords(text: string, language: 'en' | 'hi' = 'en'): Sp
 
 export function speakText(
   textOrOptions: string | (SpeakTextOptions & { text: string }),
-  languageOrOptions?: 'en' | 'hi' | SpeakTextOptions,
+  languageOrOptions?: AppLanguage | SpeakTextOptions,
   legacyOnStart?: () => void,
   legacyOnEnd?: () => void,
   legacyOnError?: () => void,
@@ -203,17 +212,17 @@ export function speakText(
 
     const words = parseSpokenWords(cleanText, language);
     const totalWeight = words.reduce((acc, w) => acc + w.weight, 0);
-    const msPerUnit = language === 'hi' ? 62 : 54;
+    const msPerUnit = language === 'en' ? 54 : 62;
     const totalEstimatedDurationMs = Math.max(800, totalWeight * msPerUnit);
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
+    utterance.lang = SPEECH_LANG_CODES[language];
     utterance.rate = 0.95; // Steady, intelligible rate
     utterance.pitch = 1.0;
 
     // Select matched voice if available
     const voices = window.speechSynthesis.getVoices();
-    const targetLangCode = language === 'hi' ? 'hi' : 'en';
+    const targetLangCode = language;
     const matchedVoice = voices.find((v) => v.lang.toLowerCase().startsWith(targetLangCode));
     if (matchedVoice) {
       utterance.voice = matchedVoice;

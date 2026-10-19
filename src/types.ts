@@ -134,5 +134,5 @@ export interface FollowUpQuestion {
   allow_free_text?: boolean;
 }
 
-export type AppLanguage = 'en' | 'hi';
+export type AppLanguage = 'en' | 'hi' | 'mr' | 'te';
 export type AppScreen = 'signup' | 'onboarding' | 'landing' | 'followup' | 'results' | 'about' | 'profile' | 'saved';

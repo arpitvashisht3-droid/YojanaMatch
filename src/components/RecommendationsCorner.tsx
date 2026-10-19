@@ -1,3 +1,4 @@
+import type { AppLanguage } from '../types';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Sparkles,
@@ -56,7 +57,7 @@ export const getPrehighlightedTag = (
 // Shared card renderers
 export const renderPopularSchemeCard = (
   scheme: SchemeWithExtras,
-  language: 'en' | 'hi',
+  language: AppLanguage,
   t: (typeof translations)['en'],
   onExplore: (name: string) => void,
   isScholarship: boolean = false
@@ -100,7 +101,7 @@ export const renderPopularSchemeCard = (
 export const renderTrendingSchemeCard = (
   scheme: SchemeWithExtras,
   idx: number,
-  language: 'en' | 'hi',
+  language: AppLanguage,
   onExplore: (name: string) => void,
   isScholarship: boolean = false
 ) => (
@@ -142,7 +143,7 @@ export const renderTrendingSchemeCard = (
 
 export const renderNewThisMonthSchemeCard = (
   scheme: SchemeWithExtras,
-  language: 'en' | 'hi',
+  language: AppLanguage,
   onExplore: (name: string) => void,
   isScholarship: boolean = false
 ) => (

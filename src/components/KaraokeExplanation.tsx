@@ -1,3 +1,4 @@
+import type { AppLanguage } from '../types';
 import React, { useMemo, useEffect, useRef } from 'react';
 import { Volume2 } from 'lucide-react';
 
@@ -7,7 +8,7 @@ interface KaraokeExplanationProps {
   activeWordIndex: number | null;
   highlightMode?: 'word' | 'paragraph';
   className?: string;
-  language?: 'en' | 'hi';
+  language?: AppLanguage;
 }
 
 interface TextToken {

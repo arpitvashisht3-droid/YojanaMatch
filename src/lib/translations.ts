@@ -222,7 +222,11 @@ export const translations = {
     emi_disclaimer: "Estimate only. The actual interest rate and tenure are decided by your bank.",
     share_wa_button: "Share on WhatsApp",
     share_wa_intro: "YojanaMatch found {count} government benefits I may be eligible for. Top matches:",
-    share_wa_footer: "Check your own eligibility on YojanaMatch. It is free and needs no OTP."
+    share_wa_footer: "Check your own eligibility on YojanaMatch. It is free and needs no OTP.",
+    doc_checklist_title: "Documents You Need",
+    doc_checklist_progress: "{done} of {total} ready",
+    doc_checklist_all_ready: "All documents ready. You can apply!",
+    doc_checklist_note: "Typical list. Required documents can vary by state or bank, so confirm on the official portal."
   },
   hi: {
     app_title: "योजना मैच (YojanaMatch)",
@@ -447,7 +451,11 @@ export const translations = {
     emi_disclaimer: "यह केवल अनुमान है। वास्तविक ब्याज दर और अवधि आपका बैंक तय करता है।",
     share_wa_button: "व्हाट्सएप पर साझा करें",
     share_wa_intro: "योजना मैच पर मुझे {count} सरकारी लाभ मिले हैं जिनके लिए मैं पात्र हो सकता/सकती हूँ। शीर्ष योजनाएं:",
-    share_wa_footer: "अपनी पात्रता योजना मैच पर जांचें। यह निःशुल्क है और इसमें ओटीपी नहीं लगता।"
+    share_wa_footer: "अपनी पात्रता योजना मैच पर जांचें। यह निःशुल्क है और इसमें ओटीपी नहीं लगता।",
+    doc_checklist_title: "ज़रूरी दस्तावेज़",
+    doc_checklist_progress: "{total} में से {done} तैयार",
+    doc_checklist_all_ready: "सभी दस्तावेज़ तैयार हैं। आप आवेदन कर सकते हैं!",
+    doc_checklist_note: "यह सामान्य सूची है। राज्य या बैंक के अनुसार दस्तावेज़ बदल सकते हैं, कृपया आधिकारिक पोर्टल पर पुष्टि करें।"
   },
   mr: {
     app_title: "योजना मॅच (YojanaMatch)",
@@ -672,7 +680,11 @@ export const translations = {
     emi_disclaimer: "हा फक्त अंदाज आहे. प्रत्यक्ष व्याजदर आणि कालावधी आपली बँक ठरवते.",
     share_wa_button: "व्हॉट्सॲपवर शेअर करा",
     share_wa_intro: "योजना मॅचवर मला {count} सरकारी लाभ सापडले आहेत, ज्यांसाठी मी पात्र असू शकतो/शकते. अव्वल योजना:",
-    share_wa_footer: "आपली पात्रता योजना मॅचवर तपासा. हे मोफत आहे आणि ओटीपी लागत नाही."
+    share_wa_footer: "आपली पात्रता योजना मॅचवर तपासा. हे मोफत आहे आणि ओटीपी लागत नाही.",
+    doc_checklist_title: "आवश्यक कागदपत्रे",
+    doc_checklist_progress: "{total} पैकी {done} तयार",
+    doc_checklist_all_ready: "सर्व कागदपत्रे तयार आहेत. आपण अर्ज करू शकता!",
+    doc_checklist_note: "ही सर्वसाधारण यादी आहे. राज्य किंवा बँकेनुसार कागदपत्रे बदलू शकतात, कृपया अधिकृत पोर्टलवर खात्री करा."
   },
   te: {
     app_title: "యోజన మ్యాచ్ (YojanaMatch)",
@@ -897,6 +909,10 @@ export const translations = {
     emi_disclaimer: "ఇది కేవలం అంచనా. అసలు వడ్డీ రేటు మరియు కాలవ్యవధిని మీ బ్యాంకు నిర్ణయిస్తుంది.",
     share_wa_button: "వాట్సాప్‌లో షేర్ చేయండి",
     share_wa_intro: "యోజన మ్యాచ్‌లో నాకు అర్హత ఉండే అవకాశం ఉన్న {count} ప్రభుత్వ ప్రయోజనాలు దొరికాయి. అగ్ర పథకాలు:",
-    share_wa_footer: "మీ అర్హతను యోజన మ్యాచ్‌లో తనిఖీ చేయండి. ఇది ఉచితం, ఓటీపీ అవసరం లేదు."
+    share_wa_footer: "మీ అర్హతను యోజన మ్యాచ్‌లో తనిఖీ చేయండి. ఇది ఉచితం, ఓటీపీ అవసరం లేదు.",
+    doc_checklist_title: "అవసరమైన పత్రాలు",
+    doc_checklist_progress: "{total}లో {done} సిద్ధం",
+    doc_checklist_all_ready: "అన్ని పత్రాలు సిద్ధం. మీరు దరఖాస్తు చేయవచ్చు!",
+    doc_checklist_note: "ఇది సాధారణ జాబితా. రాష్ట్రం లేదా బ్యాంకును బట్టి పత్రాలు మారవచ్చు, దయచేసి అధికారిక పోర్టల్‌లో నిర్ధారించుకోండి."
   }
 };

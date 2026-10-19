@@ -1,3 +1,7 @@
+import { DocumentChecklist } from './DocumentChecklist';
+import { getDocsForScheme } from '../lib/documentChecklists';
+import { Share2 as ShareIcon } from 'lucide-react';
+import { buildWhatsAppMessage, openWhatsAppShare } from '../lib/shareWhatsApp';
 import { EmiCalculator } from './EmiCalculator';
 import { EMI_DEFAULTS } from '../lib/emiDefaults';
 import React, { useState, useEffect } from 'react';
@@ -162,7 +166,15 @@ export const ResultsScreen: React.FC = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => openWhatsAppShare(buildWhatsAppMessage(matchedResults, language))}
+            className="touch-target px-4 py-2 text-xs sm:text-sm font-bold text-white bg-[#25D366] hover:bg-[#1EBE5A] rounded-xl transition-all flex items-center gap-1.5 cursor-pointer shadow-sm"
+          >
+            <ShareIcon className="w-4 h-4" />
+            <span>{t.share_wa_button}</span>
+          </button>
           <button
             type="button"
             onClick={modifyAnswers}
@@ -457,6 +469,14 @@ export const ResultsScreen: React.FC = () => {
                         </div>
                       </div>
                     )}
+
+                    <div className="mb-4">
+                      <DocumentChecklist
+                        schemeId={scheme.id}
+                        docs={getDocsForScheme(scheme, contentMode)}
+                        language={language}
+                      />
+                    </div>
 
                     {EMI_DEFAULTS[scheme.id] && (
                       <EmiCalculator

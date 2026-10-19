@@ -1,3 +1,5 @@
+import { EmiCalculator } from './EmiCalculator';
+import { EMI_DEFAULTS } from '../lib/emiDefaults';
 import React, { useState, useEffect } from 'react';
 import {
   ExternalLink,
@@ -454,6 +456,17 @@ export const ResultsScreen: React.FC = () => {
                           ))}
                         </div>
                       </div>
+                    )}
+
+                    {EMI_DEFAULTS[scheme.id] && (
+                      <EmiCalculator
+                        language={language}
+                        maxAmount={EMI_DEFAULTS[scheme.id].maxAmount}
+                        defaultAmount={EMI_DEFAULTS[scheme.id].defaultAmount}
+                        defaultRate={EMI_DEFAULTS[scheme.id].defaultRate}
+                        defaultTenureYears={EMI_DEFAULTS[scheme.id].defaultTenureYears}
+                        maxTenureYears={EMI_DEFAULTS[scheme.id].maxTenureYears}
+                      />
                     )}
 
                     {/* Direct Official Apply Button */}

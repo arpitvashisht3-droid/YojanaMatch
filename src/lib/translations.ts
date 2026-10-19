@@ -210,7 +210,19 @@ export const translations = {
     principle1: "Zero Hallucination: The AI never invents eligibility rules; pure code does the matching.",
     principle2: "Privacy First: Trust-based login; no OTPs or Aadhaar required.",
     principle3: "Inclusive & Accessible: Usable by first-time internet users with voice & large touch targets.",
-    btn_back_to_search: "Find Schemes Now"
+    btn_back_to_search: "Find Schemes Now",
+    emi_title: "EMI Calculator (Estimate)",
+    emi_loan_amount: "Loan Amount",
+    emi_interest_rate: "Interest Rate (per year)",
+    emi_tenure: "Repayment Period",
+    emi_years: "years",
+    emi_monthly: "Monthly EMI",
+    emi_total_interest: "Total Interest",
+    emi_total_payable: "Total Payable",
+    emi_disclaimer: "Estimate only. The actual interest rate and tenure are decided by your bank.",
+    share_wa_button: "Share on WhatsApp",
+    share_wa_intro: "YojanaMatch found {count} government benefits I may be eligible for. Top matches:",
+    share_wa_footer: "Check your own eligibility on YojanaMatch. It is free and needs no OTP."
   },
   hi: {
     app_title: "योजना मैच (YojanaMatch)",
@@ -423,7 +435,19 @@ export const translations = {
     principle1: "सटीक पात्रता: एआई कभी गलत नियम नहीं बनाता; शुद्ध कोड मिलान करता है।",
     principle2: "विश्वसनीय लॉगिन: किसी पासवर्ड, ओटीपी या आधार की आवश्यकता नहीं।",
     principle3: "सरल एवं सुलभ: आवाज और बड़े बटनों के साथ पहली बार इंटरनेट चलाने वालों के लिए आसान।",
-    btn_back_to_search: "अभी योजनाएं खोजें"
+    btn_back_to_search: "अभी योजनाएं खोजें",
+    emi_title: "ईएमआई कैलकुलेटर (अनुमान)",
+    emi_loan_amount: "ऋण राशि",
+    emi_interest_rate: "ब्याज दर (प्रति वर्ष)",
+    emi_tenure: "चुकाने की अवधि",
+    emi_years: "वर्ष",
+    emi_monthly: "मासिक ईएमआई",
+    emi_total_interest: "कुल ब्याज",
+    emi_total_payable: "कुल देय राशि",
+    emi_disclaimer: "यह केवल अनुमान है। वास्तविक ब्याज दर और अवधि आपका बैंक तय करता है।",
+    share_wa_button: "व्हाट्सएप पर साझा करें",
+    share_wa_intro: "योजना मैच पर मुझे {count} सरकारी लाभ मिले हैं जिनके लिए मैं पात्र हो सकता/सकती हूँ। शीर्ष योजनाएं:",
+    share_wa_footer: "अपनी पात्रता योजना मैच पर जांचें। यह निःशुल्क है और इसमें ओटीपी नहीं लगता।"
   },
   mr: {
     app_title: "योजना मॅच (YojanaMatch)",
@@ -636,7 +660,19 @@ export const translations = {
     principle1: "अचूक पात्रता: एआय कधीही चुकीचे नियम तयार करत नाही; शुद्ध कोड जुळणी करतो.",
     principle2: "विश्वासार्ह लॉगिन: कोणत्याही पासवर्ड, ओटीपी किंवा आधारची गरज नाही.",
     principle3: "सोपे आणि सर्वांसाठी: आवाज आणि मोठ्या बटणांमुळे पहिल्यांदा इंटरनेट वापरणाऱ्यांसाठी सोपे.",
-    btn_back_to_search: "आत्ताच योजना शोधा"
+    btn_back_to_search: "आत्ताच योजना शोधा",
+    emi_title: "ईएमआय कॅल्क्युलेटर (अंदाज)",
+    emi_loan_amount: "कर्जाची रक्कम",
+    emi_interest_rate: "व्याजदर (वार्षिक)",
+    emi_tenure: "परतफेडीचा कालावधी",
+    emi_years: "वर्षे",
+    emi_monthly: "मासिक ईएमआय",
+    emi_total_interest: "एकूण व्याज",
+    emi_total_payable: "एकूण देय रक्कम",
+    emi_disclaimer: "हा फक्त अंदाज आहे. प्रत्यक्ष व्याजदर आणि कालावधी आपली बँक ठरवते.",
+    share_wa_button: "व्हॉट्सॲपवर शेअर करा",
+    share_wa_intro: "योजना मॅचवर मला {count} सरकारी लाभ सापडले आहेत, ज्यांसाठी मी पात्र असू शकतो/शकते. अव्वल योजना:",
+    share_wa_footer: "आपली पात्रता योजना मॅचवर तपासा. हे मोफत आहे आणि ओटीपी लागत नाही."
   },
   te: {
     app_title: "యోజన మ్యాచ్ (YojanaMatch)",
@@ -849,6 +885,18 @@ export const translations = {
     principle1: "ఖచ్చితమైన అర్హత: ఏఐ ఎప్పుడూ తప్పు నియమాలు సృష్టించదు; స్వచ్ఛమైన కోడ్ సరిపోలుస్తుంది.",
     principle2: "నమ్మకమైన లాగిన్: పాస్‌వర్డ్, ఓటీపీ లేదా ఆధార్ అవసరం లేదు.",
     principle3: "సులభం మరియు అందరికీ అందుబాటులో: వాయిస్ మరియు పెద్ద బటన్లతో మొదటిసారి ఇంటర్నెట్ వాడేవారికి సులభం.",
-    btn_back_to_search: "ఇప్పుడే పథకాలను కనుగొనండి"
+    btn_back_to_search: "ఇప్పుడే పథకాలను కనుగొనండి",
+    emi_title: "ఈఎంఐ కాలిక్యులేటర్ (అంచనా)",
+    emi_loan_amount: "రుణ మొత్తం",
+    emi_interest_rate: "వడ్డీ రేటు (సంవత్సరానికి)",
+    emi_tenure: "తిరిగి చెల్లించే కాలం",
+    emi_years: "సంవత్సరాలు",
+    emi_monthly: "నెలవారీ ఈఎంఐ",
+    emi_total_interest: "మొత్తం వడ్డీ",
+    emi_total_payable: "మొత్తం చెల్లించాల్సినది",
+    emi_disclaimer: "ఇది కేవలం అంచనా. అసలు వడ్డీ రేటు మరియు కాలవ్యవధిని మీ బ్యాంకు నిర్ణయిస్తుంది.",
+    share_wa_button: "వాట్సాప్‌లో షేర్ చేయండి",
+    share_wa_intro: "యోజన మ్యాచ్‌లో నాకు అర్హత ఉండే అవకాశం ఉన్న {count} ప్రభుత్వ ప్రయోజనాలు దొరికాయి. అగ్ర పథకాలు:",
+    share_wa_footer: "మీ అర్హతను యోజన మ్యాచ్‌లో తనిఖీ చేయండి. ఇది ఉచితం, ఓటీపీ అవసరం లేదు."
   }
 };

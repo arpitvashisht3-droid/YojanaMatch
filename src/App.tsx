@@ -9,6 +9,7 @@ import { SignupScreen } from './components/SignupScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { ProfileScreen } from './components/ProfileScreen';
 import { SavedSchemesScreen } from './components/SavedSchemesScreen';
+import { FamilyProfileScreen } from './components/FamilyProfileScreen';
 import { useAppStore } from './store/useAppStore';
 
 export default function App() {
@@ -66,6 +67,7 @@ export default function App() {
             {effectiveScreen === 'about' && <AboutScreen />}
             {effectiveScreen === 'profile' && <ProfileScreen />}
             {effectiveScreen === 'saved' && <SavedSchemesScreen />}
+            {effectiveScreen === 'family' && <FamilyProfileScreen />}
           </>
         )}
       </main>
@@ -80,10 +82,6 @@ export default function App() {
               <span className="w-2.5 h-2.5 rounded-full bg-[#00A86B]"></span>
             </div>
             <span className="font-bold tracking-tight">YojanaMatch (योजना मैच)</span>
-            <span className="text-white/40">|</span>
-            <span className="text-white/80">
-              {language === 'hi' ? 'स्मार्ट इंडिया हैकाथॉन एमवीपी' : 'Smart India Hackathon MVP'}
-            </span>
           </div>
 
           <div className="flex items-center gap-4 text-white/70">

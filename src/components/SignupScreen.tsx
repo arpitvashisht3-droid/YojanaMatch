@@ -163,11 +163,6 @@ export const SignupScreen: React.FC = () => {
               </div>
             </div>
           </div>
-
-          <div className="pt-4 border-t border-[#004D40]/10 text-[11px] text-[#004D40]/60 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-            <span>Smart India Hackathon MVP</span>
-          </div>
         </div>
 
         {/* ================= RIGHT COLUMN (70% width, Interactive Form) ================= */}

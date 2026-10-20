@@ -338,14 +338,14 @@ export const LandingScreen: React.FC = () => {
     <div className="w-full max-w-4xl mx-auto px-4 py-8 sm:py-12">
       {/* Hero Header */}
       <div className="text-center mb-8 sm:mb-10">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#004D40]/5 border border-[#004D40]/10 text-[#004D40] text-xs font-bold uppercase tracking-wider mb-4">
-          <Sparkles className="w-3.5 h-3.5 text-[#FF6B35]" />
-          <span>
-            {isScholarship
-              ? (language === 'hi' ? 'छात्रवृत्ति पोर्टल 2025' : 'Scholarship Portal 2025')
-              : (language === 'hi' ? 'स्मार्ट इंडिया हैकाथॉन एमवीपी' : 'Smart India Hackathon MVP')}
-          </span>
-        </div>
+        {isScholarship && (
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#004D40]/5 border border-[#004D40]/10 text-[#004D40] text-xs font-bold uppercase tracking-wider mb-4">
+            <Sparkles className="w-3.5 h-3.5 text-[#FF6B35]" />
+            <span>
+              {language === 'hi' ? 'छात्रवृत्ति पोर्टल 2025' : 'Scholarship Portal 2025'}
+            </span>
+          </div>
+        )}
         <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-[#004D40] tracking-tight leading-tight mb-4">
           {isScholarship ? (
             language === 'hi' ? (

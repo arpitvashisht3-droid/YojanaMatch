@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Shield, Cpu, Users, Award, CheckCircle2 } from 'lucide-react';
+import { Sparkles, ArrowRight, Shield, Cpu, Users, CheckCircle2 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import { translations } from '../lib/translations';
 
@@ -11,10 +11,6 @@ export const AboutScreen: React.FC = () => {
     <div className="w-full max-w-4xl mx-auto px-4 py-8 sm:py-12 space-y-8">
       {/* Title & Vision */}
       <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#004D40]/5 border border-[#004D40]/10 text-[#004D40] text-xs font-bold uppercase tracking-wider">
-          <Award className="w-4 h-4 text-[#FF6B35]" />
-          <span>{language === 'hi' ? 'स्मार्ट इंडिया हैकाथॉन मिशन' : 'Smart India Hackathon Mission'}</span>
-        </div>
         <h1 className="text-3xl sm:text-4xl font-extrabold text-[#004D40] tracking-tight">
           {t.about_title}
         </h1>

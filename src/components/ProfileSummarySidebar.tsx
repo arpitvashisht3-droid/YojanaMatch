@@ -33,17 +33,18 @@ export const ProfileSummarySidebar: React.FC = () => {
     user,
     updateExtractedProfileAndRematch,
     isLoading,
+    familyMode,
   } = useAppStore();
   const t = translations[language];
 
   // Merge extractedProfile with user fallback
   const mergedProfile: UserProfile = useMemo(() => {
-    const fromUser = userRecordToProfile(user);
+    const fromUser: UserProfile = familyMode ? {} : userRecordToProfile(user);
     return {
       ...fromUser,
       ...extractedProfile,
     };
-  }, [user, extractedProfile]);
+  }, [user, extractedProfile, familyMode]);
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isMobileExpanded, setIsMobileExpanded] = useState(false);

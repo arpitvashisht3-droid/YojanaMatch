@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ShieldCheck, Info, Home, User, LogOut, Bookmark, Globe, ChevronDown, Check } from 'lucide-react';
+import { ShieldCheck, Info, Home, User, LogOut, Bookmark, Globe, ChevronDown, Check, Users as UsersIcon } from 'lucide-react';
 import type { AppLanguage } from '../types';
 
 const LANGUAGE_OPTIONS: { code: AppLanguage; short: string; label: string }[] = [
@@ -111,6 +111,20 @@ export const Navbar: React.FC = () => {
 
           {user && (
             <nav className="flex items-center gap-1.5 sm:gap-2">
+              {user.onboarding_completed && (
+                <button
+                  onClick={() => navigateTo('family')}
+                  className={`touch-target flex items-center gap-1.5 px-2.5 py-1.5 text-xs sm:text-sm font-semibold rounded-lg transition-colors cursor-pointer ${
+                    currentScreen === 'family'
+                      ? 'bg-[#004D40]/10 text-[#004D40]'
+                      : 'text-[#004D40]/80 hover:text-[#004D40] hover:bg-[#004D40]/5'
+                  }`}
+                  title={t.family_nav}
+                >
+                  <UsersIcon className="w-4 h-4 text-[#FF6B35]" />
+                  <span className="hidden lg:inline">{t.family_nav}</span>
+                </button>
+              )}
               {currentScreen !== 'landing' && user.onboarding_completed && (
                 <button
                   onClick={() => navigateTo('landing')}

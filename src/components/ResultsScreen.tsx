@@ -1,3 +1,4 @@
+import { FamilyBanner } from './FamilyBanner';
 import { DocumentChecklist } from './DocumentChecklist';
 import { getDocsForScheme } from '../lib/documentChecklists';
 import { Share2 as ShareIcon } from 'lucide-react';
@@ -151,6 +152,8 @@ export const ResultsScreen: React.FC = () => {
 
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-6 sm:py-8 space-y-6">
+      <FamilyBanner />
+
       {/* Header & Global Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#004D40]/10 shadow-xs">
         <div>

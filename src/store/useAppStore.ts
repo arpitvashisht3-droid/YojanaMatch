@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { AppLanguage, AppScreen, ContentMode, MatchedSchemeResult, UserProfile, UserRecord } from '../types';
+import { AppLanguage, AppScreen, ContentMode, FamilyMode, FamilyRelation, MatchedSchemeResult, UserProfile, UserRecord } from '../types';
 import schemesRaw from '../data/schemes.json';
 import scholarshipsRaw from '../data/scholarships.json';
 import { matchSchemes } from '../lib/matchingEngine';
@@ -70,9 +70,12 @@ interface AppState {
   error: string | null;
   recommendationsLayout: '3column' | 'stacked';
   bookmarkedSchemeIds: string[];
+  familyMode: FamilyMode | null;
 
   // Actions
   setLanguage: (lang: AppLanguage) => void;
+  startFamilyMatch: (profile: UserProfile, relation: FamilyRelation) => Promise<void>;
+  exitFamilyMode: () => void;
   setContentMode: (mode: ContentMode) => void;
   setInputText: (text: string) => void;
   setIsListening: (val: boolean) => void;
@@ -117,6 +120,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   error: null,
   recommendationsLayout: '3column',
   bookmarkedSchemeIds: loadStoredBookmarks(),
+  familyMode: null,
 
   setLanguage: (lang) => set({ language: lang }),
   setContentMode: (mode) => {
@@ -125,7 +129,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({
       contentMode: mode,
       // If currently viewing results, transition cleanly back to landing for the new mode
-      currentScreen: currentScreen === 'results' ? 'landing' : currentScreen,
+      currentScreen: currentScreen === 'results' ? (get().familyMode ? 'family' : 'landing') : currentScreen,
       matchedResults: [],
       expandedCardIds: [],
       error: null,
@@ -151,7 +155,46 @@ export const useAppStore = create<AppState>((set, get) => ({
     const key = `${categoryType}:${schemeId}`;
     return get().bookmarkedSchemeIds.includes(key);
   },
-  navigateTo: (screen) => set({ currentScreen: screen }),
+  navigateTo: (screen) => {
+    const { familyMode } = get();
+    if (familyMode && screen !== 'family' && screen !== 'results') {
+      set({
+        currentScreen: screen,
+        familyMode: null,
+        extractedProfile: {},
+        matchedResults: [],
+        expandedCardIds: [],
+      });
+    } else {
+      set({ currentScreen: screen });
+    }
+  },
+  startFamilyMatch: async (profile, relation) => {
+    const { contentMode, language } = get();
+    const cacheKey = 'family:' + contentMode + ':' + language + ':' + JSON.stringify(profile);
+    set({
+      familyMode: { relation },
+      extractedProfile: profile,
+      inputText: '',
+      matchedResults: [],
+      expandedCardIds: [],
+      isLoading: true,
+      loadingMessageKey: 'loading_matching',
+      error: null,
+    });
+    await runMatchingAndResults(profile, cacheKey, set, get);
+  },
+  exitFamilyMode: () => {
+    set({
+      familyMode: null,
+      extractedProfile: {},
+      matchedResults: [],
+      expandedCardIds: [],
+      inputText: '',
+      currentScreen: 'landing',
+      error: null,
+    });
+  },
 
   initAuthSession: async () => {
     try {
@@ -327,6 +370,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     clearStoredSession(SESSION_STORAGE_KEY);
     clearStoredSession(EMAIL_SESSION_STORAGE_KEY);
     set({
+      familyMode: null,
       user: null,
       currentScreen: 'signup',
       extractedProfile: {},
@@ -475,7 +519,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   modifyAnswers: () => {
     set({
-      currentScreen: 'landing',
+      currentScreen: get().familyMode ? 'family' : 'landing',
       isLoading: false,
       error: null,
     });
@@ -483,6 +527,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   resetAll: () => {
     set({
+      familyMode: null,
       currentScreen: 'landing',
       inputText: '',
       extractedProfile: {},

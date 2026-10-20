@@ -135,4 +135,8 @@ export interface FollowUpQuestion {
 }
 
 export type AppLanguage = 'en' | 'hi' | 'mr' | 'te';
-export type AppScreen = 'signup' | 'onboarding' | 'landing' | 'followup' | 'results' | 'about' | 'profile' | 'saved';
+export type AppScreen = 'signup' | 'onboarding' | 'landing' | 'followup' | 'results' | 'about' | 'profile' | 'saved' | 'family';
+export type FamilyRelation = 'parent' | 'sibling' | 'neighbor' | 'other';
+export interface FamilyMode {
+  relation: FamilyRelation;
+}
